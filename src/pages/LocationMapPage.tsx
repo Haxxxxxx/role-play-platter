@@ -141,6 +141,7 @@ export function LocationMapPage() {
 
               <MapGrid
                 mapId={map.id}
+                terrainText={`${location.name} ${location.description}`}
                 gridWidth={map.gridWidth}
                 gridHeight={map.gridHeight}
                 tokens={tokens}

@@ -7,6 +7,8 @@ const DRAG_THRESHOLD_PX = 6
 
 export function MapGrid({
   mapId,
+  terrainText,
+  forceOutdoorTerrain,
   gridWidth,
   gridHeight,
   tokens,
@@ -22,6 +24,13 @@ export function MapGrid({
    * per map, so it's stable across reloads without storing or hand-painting
    * a single tile. */
   mapId: string
+  /** The location's (or campaign's) own name + description — decides
+   * whether this map gets terrain at all, and which kind, instead of pure
+   * noise unrelated to the actual scene. */
+  terrainText: string
+  /** The overworld map: force outdoor terrain regardless of what's in the
+   * combined text (e.g. an interior location's name shouldn't blank it). */
+  forceOutdoorTerrain?: boolean
   gridWidth: number
   gridHeight: number
   tokens: MapToken[]
@@ -67,7 +76,13 @@ export function MapGrid({
       }}
     >
       <div className="relative" style={{ width, height }}>
-        <HexTerrain seed={mapId} width={width} height={height} />
+        <HexTerrain
+          seed={mapId}
+          descriptionText={terrainText}
+          forceOutdoor={forceOutdoorTerrain}
+          width={width}
+          height={height}
+        />
 
         {/* Square token-snap grid, drawn as its own layer so it stays
             legible over the terrain instead of being painted behind it. */}

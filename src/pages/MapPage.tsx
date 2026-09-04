@@ -177,6 +177,8 @@ export function MapPage() {
 
       <MapGrid
         mapId={map.id}
+        terrainText={`${campaign.description} ${locations.map((l) => `${l.name} ${l.description}`).join(' ')}`}
+        forceOutdoorTerrain
         gridWidth={map.gridWidth}
         gridHeight={map.gridHeight}
         tokens={tokens}
