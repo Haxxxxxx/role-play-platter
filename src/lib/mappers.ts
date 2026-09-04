@@ -1,9 +1,11 @@
 import type {
   AbilityScores,
+  BattleMap,
   Campaign,
   Character,
   InventoryItem,
   Location,
+  MapToken,
   Npc,
   Quest,
   RpgSystem,
@@ -206,6 +208,66 @@ export function mapQuest(row: QuestRow): Quest {
     relatedNpcIds: row.related_npc_ids,
     relatedLocationIds: row.related_location_ids,
     sourceNoteId: row.source_note_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export interface BattleMapRow {
+  id: string
+  campaign_id: string
+  name: string
+  grid_width: number
+  grid_height: number
+  background_image_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export function mapBattleMap(row: BattleMapRow): BattleMap {
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    name: row.name,
+    gridWidth: row.grid_width,
+    gridHeight: row.grid_height,
+    backgroundImageUrl: row.background_image_url,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export interface MapTokenRow {
+  id: string
+  campaign_id: string
+  map_id: string
+  kind: string
+  label: string
+  icon: string
+  color: string
+  x: number
+  y: number
+  ref_npc_id: string | null
+  ref_character_id: string | null
+  visible_to_players: boolean
+  created_at: string
+  updated_at: string
+}
+
+export function mapMapToken(row: MapTokenRow): MapToken {
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    mapId: row.map_id,
+    kind: row.kind as MapToken['kind'],
+    label: row.label,
+    icon: row.icon,
+    color: row.color,
+    x: row.x,
+    y: row.y,
+    refNpcId: row.ref_npc_id,
+    refCharacterId: row.ref_character_id,
+    visibleToPlayers: row.visible_to_players,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

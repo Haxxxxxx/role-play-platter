@@ -112,11 +112,26 @@ export interface Quest extends BaseRow {
   sourceNoteId: string | null
 }
 
-/** Phase 2 — battle map. Typed now so the schema doesn't need to shift later. */
 export interface BattleMap extends BaseRow {
   campaignId: string
   name: string
   gridWidth: number
   gridHeight: number
   backgroundImageUrl: string | null
+}
+
+export type MapTokenKind = 'npc' | 'character' | 'monster' | 'decoration' | 'object'
+
+export interface MapToken extends BaseRow {
+  campaignId: string
+  mapId: string
+  kind: MapTokenKind
+  label: string
+  icon: string
+  color: string
+  x: number
+  y: number
+  refNpcId: string | null
+  refCharacterId: string | null
+  visibleToPlayers: boolean
 }
