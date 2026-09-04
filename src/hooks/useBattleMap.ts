@@ -15,7 +15,12 @@ import type { BattleMap, MapEdge, MapToken, MapTokenKind } from '@/types/databas
 // out) — the grid scrolls (see MapGrid), so it's a canvas for a journey, not
 // one room. A location's own detail map is tactical-room scale instead.
 const OVERWORLD_GRID = { width: 40, height: 28 }
-const LOCATION_GRID = { width: 14, height: 10 }
+// Big enough for players to actually drag their token around a room, not
+// just look at it — was shrunk to 14x10 to fix a sparse-content look, but
+// that traded away the thing the map is actually for. 24x16 fits inside the
+// page's own max-w-5xl content column without horizontal scroll on a normal
+// desktop, while still leaving real room to move.
+const LOCATION_GRID = { width: 24, height: 16 }
 
 /**
  * Gets or lazily creates the one battle_maps row for either the campaign's
