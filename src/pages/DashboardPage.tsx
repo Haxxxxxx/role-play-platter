@@ -6,13 +6,20 @@ import { useCampaigns, createCampaign } from '@/hooks/useCampaigns'
 import type { RpgSystem } from '@/types/database'
 import { useUiStore } from '@/store/useUiStore'
 
-const SYSTEMS: RpgSystem[] = ['D&D 5e', 'Pathfinder 2e', 'Call of Cthulhu', 'Blades in the Dark', 'Custom / Homebrew']
+const SYSTEMS: RpgSystem[] = [
+  'Chroniques Oubliées',
+  'D&D 5e',
+  'Pathfinder 2e',
+  'Call of Cthulhu',
+  'Blades in the Dark',
+  'Custom / Homebrew',
+]
 
 export function DashboardPage() {
   const { user } = useAuth()
   const { campaigns, loading } = useCampaigns(user?.id ?? null)
   const [name, setName] = useState('')
-  const [system, setSystem] = useState<RpgSystem>('D&D 5e')
+  const [system, setSystem] = useState<RpgSystem>('Chroniques Oubliées')
   const [description, setDescription] = useState('')
   const pushToast = useUiStore((s) => s.pushToast)
   const queryClient = useQueryClient()
@@ -49,7 +56,7 @@ export function DashboardPage() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Campaign name (e.g. The Sunken Spire)"
+            placeholder="Campaign name (ex. La Malédiction de Kaer Doreth)"
             className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
           />
           <div className="flex gap-3">

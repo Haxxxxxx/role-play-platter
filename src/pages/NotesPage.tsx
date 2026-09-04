@@ -38,10 +38,10 @@ export function NotesPage() {
       <section>
         <h2 className="mb-3 font-display text-xl text-parchment-100">Drop in what happened</h2>
         <p className="mb-4 text-sm text-parchment-200/60">
-          Paste raw session notes, or a quick line like "Aria looted a +1 dagger off the bandit
-          captain" — Claude structures it into the timeline, NPC codex, quest log, and party
-          inventory automatically. This is temporary/working memory: nothing here is final until
-          it lands in the chronicle.
+          Paste raw session notes, or a quick line like "Elyne a récupéré une dague +1 sur le
+          capitaine des bandits" — Claude structures it into the timeline, NPC codex, quest log,
+          and party inventory automatically. This is temporary/working memory: nothing here is
+          final until it lands in the chronicle.
         </p>
         <form
           className="flex flex-col gap-3"
@@ -71,7 +71,7 @@ export function NotesPage() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={10}
-            placeholder="e.g. The party finally reached the Sunken Spire. Old Marrow the ferryman warned them the tide-priests worship something below the waterline. Kade found a corroded key on the second landing..."
+            placeholder="ex. La compagnie atteint enfin les ruines de Kaer Doreth. Le passeur Amrod les met en garde : les cultistes de la Brume vénèrent quelque chose sous les eaux noires. Elyne a trouvé une clé rouillée sur le second palier..."
             className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
           />
           <button

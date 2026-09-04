@@ -8,6 +8,7 @@ export type RpgSystem =
   | 'Pathfinder 2e'
   | 'Call of Cthulhu'
   | 'Blades in the Dark'
+  | 'Chroniques Oubliées'
   | 'Custom / Homebrew'
 
 export interface BaseRow {

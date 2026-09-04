@@ -81,7 +81,7 @@ function NewCharacterForm({
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Character name"
+        placeholder="Character name (ex. Elyne)"
         className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
       />
       <input
@@ -93,13 +93,13 @@ function NewCharacterForm({
       <input
         value={classAndLevel}
         onChange={(e) => setClassAndLevel(e.target.value)}
-        placeholder="Class & level (e.g. Rogue 3)"
+        placeholder="Class & level (ex. Roublard 3)"
         className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
       />
       <input
         value={race}
         onChange={(e) => setRace(e.target.value)}
-        placeholder="Race / ancestry"
+        placeholder="Peuple (ex. Halfelin, Nain, Elfe)"
         className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
       />
       <button
