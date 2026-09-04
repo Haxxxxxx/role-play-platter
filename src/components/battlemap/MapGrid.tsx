@@ -70,7 +70,13 @@ export function MapGrid({
   return (
     <div
       ref={containerRef}
-      className="relative max-h-[70vh] overflow-auto rounded-lg border border-ink-700 bg-[#1a2e22]"
+      // inline-block, not the block-level default: the container must
+      // shrink to the grid's actual pixel size when that's narrower than
+      // the page (a small room), not stretch full-width and leave the
+      // leftover space as flat unstyled background past the terrain/grid.
+      // max-w-full + overflow-auto still let it scroll when the grid (the
+      // overworld) is the wider one.
+      className="relative inline-block max-h-[70vh] max-w-full overflow-auto rounded-lg border border-ink-700 bg-[#1a2e22] align-top"
       onClick={(e) => {
         if (e.target === e.currentTarget) onDeselect()
       }}
