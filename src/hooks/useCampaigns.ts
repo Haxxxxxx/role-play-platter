@@ -95,6 +95,10 @@ export async function createCampaign(params: {
   system: RpgSystem
   description: string
   gmId: string
+  /** Known users (already in `profiles`) to add as players right away —
+   * on_campaign_created already enrolls the GM, this just adds everyone
+   * else. Best-effort: a failed invite doesn't roll back the campaign. */
+  inviteUserIds?: string[]
 }): Promise<string> {
   const { data, error } = await supabase
     .from('campaigns')
@@ -102,5 +106,13 @@ export async function createCampaign(params: {
     .select('id')
     .single()
   if (error) throw error
-  return (data as { id: string }).id
+  const campaignId = (data as { id: string }).id
+
+  if (params.inviteUserIds && params.inviteUserIds.length > 0) {
+    await supabase.from('campaign_members').insert(
+      params.inviteUserIds.map((userId) => ({ campaign_id: campaignId, user_id: userId, role: 'player' })),
+    )
+  }
+
+  return campaignId
 }

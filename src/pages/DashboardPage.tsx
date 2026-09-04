@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useCampaigns, createCampaign } from '@/hooks/useCampaigns'
+import { searchProfiles, type Profile } from '@/hooks/useProfiles'
 import type { Campaign, RpgSystem } from '@/types/database'
 import { useUiStore } from '@/store/useUiStore'
 
@@ -21,14 +22,17 @@ export function DashboardPage() {
   const [name, setName] = useState('')
   const [system, setSystem] = useState<RpgSystem>('Chroniques Oubliées')
   const [description, setDescription] = useState('')
+  const [invitees, setInvitees] = useState<Profile[]>([])
   const pushToast = useUiStore((s) => s.pushToast)
   const queryClient = useQueryClient()
 
   const createMutation = useMutation({
-    mutationFn: () => createCampaign({ name, system, description, gmId: user!.id }),
+    mutationFn: () =>
+      createCampaign({ name, system, description, gmId: user!.id, inviteUserIds: invitees.map((p) => p.id) }),
     onSuccess: () => {
       setName('')
       setDescription('')
+      setInvitees([])
       pushToast('Campaign created.', 'success')
       queryClient.invalidateQueries({ queryKey: ['campaigns'] })
     },
@@ -95,6 +99,14 @@ export function DashboardPage() {
               className="flex-1 rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
             />
           </div>
+
+          <InvitePicker
+            excludeUserId={user?.id}
+            invitees={invitees}
+            onAdd={(profile) => setInvitees((prev) => [...prev, profile])}
+            onRemove={(id) => setInvitees((prev) => prev.filter((p) => p.id !== id))}
+          />
+
           <button
             type="submit"
             disabled={createMutation.isPending || !name.trim()}
@@ -116,6 +128,104 @@ export function DashboardPage() {
           ))}
         </div>
       </section>
+    </div>
+  )
+}
+
+function InvitePicker({
+  excludeUserId,
+  invitees,
+  onAdd,
+  onRemove,
+}: {
+  excludeUserId: string | undefined
+  invitees: Profile[]
+  onAdd: (profile: Profile) => void
+  onRemove: (id: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<Profile[]>([])
+  const [searching, setSearching] = useState(false)
+
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      // Resetting to the disabled state, not reacting to an external event.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setResults([])
+      return
+    }
+    let cancelled = false
+    setSearching(true)
+    const timeout = setTimeout(() => {
+      searchProfiles(query, excludeUserId)
+        .then((found) => {
+          if (!cancelled) setResults(found.filter((p) => !invitees.some((i) => i.id === p.id)))
+        })
+        .finally(() => {
+          if (!cancelled) setSearching(false)
+        })
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, excludeUserId])
+
+  return (
+    <div>
+      <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-parchment-200/40">
+        Inviter des joueurs (optionnel)
+      </label>
+      {invitees.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {invitees.map((p) => (
+            <span
+              key={p.id}
+              className="flex items-center gap-1.5 rounded-full border border-ember-500/40 bg-ember-500/10 py-1 pl-2.5 pr-1.5 text-xs text-ember-400"
+            >
+              {p.displayName ?? p.email ?? 'Joueur'}
+              <button type="button" onClick={() => onRemove(p.id)} className="hover:text-parchment-100">
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="relative">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Chercher par email…"
+          className="w-full rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
+        />
+        {query.trim().length >= 2 && (
+          <div className="absolute z-10 mt-1 w-full rounded-md border border-ink-700 bg-ink-950 shadow-lg">
+            {searching && <p className="px-3 py-2 text-xs text-parchment-200/50">Recherche…</p>}
+            {!searching && results.length === 0 && (
+              <p className="px-3 py-2 text-xs text-parchment-200/50">
+                Personne trouvé — ils devront rejoindre via le lien d'invitation une fois la campagne créée.
+              </p>
+            )}
+            {results.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  onAdd(p)
+                  setQuery('')
+                  setResults([])
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-ink-800"
+              >
+                {p.avatarUrl && <img src={p.avatarUrl} alt="" className="h-5 w-5 rounded-full" />}
+                <span className="text-parchment-100">{p.displayName ?? 'Sans nom'}</span>
+                {p.email && <span className="text-xs text-parchment-200/50">{p.email}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
