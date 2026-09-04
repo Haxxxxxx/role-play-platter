@@ -7,6 +7,31 @@ interface AuthState {
   loading: boolean
 }
 
+// Module-level, not component-level: memoizes the in-flight/completed
+// anonymous sign-in across every useAuth() call in this page load, so React
+// StrictMode's dev-only double-invoke of the effect (mount -> cleanup ->
+// mount again) can't fire signInAnonymously() twice and spawn two throwaway
+// accounts — every caller awaits the same promise instead of starting a
+// fresh sign-in.
+let sessionPromise: Promise<User | null> | null = null
+
+function ensureSession(): Promise<User | null> {
+  if (!sessionPromise) {
+    sessionPromise = (async () => {
+      const { data } = await supabase.auth.getSession()
+      if (data.session) return data.session.user
+      const { data: anon, error } = await supabase.auth.signInAnonymously()
+      if (error) {
+        console.error('Anonymous sign-in failed — enable "Anonymous sign-ins" in Supabase Auth settings.', error)
+        sessionPromise = null // allow a retry on the next mount
+        return null
+      }
+      return anon.user
+    })()
+  }
+  return sessionPromise
+}
+
 /**
  * Dev-phase auth: no login screen yet — this is inside-only use until real
  * accounts matter (friends joining parties). Signs in anonymously so
@@ -23,22 +48,9 @@ export function useAuth(): AuthState {
   useEffect(() => {
     let cancelled = false
 
-    async function init() {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        if (!cancelled) setState({ user: data.session.user, loading: false })
-        return
-      }
-      const { data: anon, error } = await supabase.auth.signInAnonymously()
-      if (cancelled) return
-      if (error) {
-        console.error('Anonymous sign-in failed — enable "Anonymous sign-ins" in Supabase Auth settings.', error)
-        setState({ user: null, loading: false })
-        return
-      }
-      setState({ user: anon.user, loading: false })
-    }
-    init()
+    ensureSession().then((user) => {
+      if (!cancelled) setState({ user, loading: false })
+    })
 
     const {
       data: { subscription },
