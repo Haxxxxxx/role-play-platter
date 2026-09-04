@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useSessionNotes } from '@/hooks/useChronicle'
 import { submitGmNote } from '@/hooks/useNotesPipeline'
+import { fetchGmRecommendations, type Recommendation, type RecommendationCategory } from '@/hooks/useRecommendations'
 import { useUiStore } from '@/store/useUiStore'
 import type { Campaign, SessionNoteKind } from '@/types/database'
 
@@ -11,6 +12,14 @@ const KIND_LABEL: Record<SessionNoteKind, string> = {
   'session-recap': 'Session recap',
   'item-update': 'Item / inventory update',
   freeform: 'Freeform note',
+}
+
+const CATEGORY_STYLE: Record<RecommendationCategory, { label: string; color: string }> = {
+  quest: { label: 'Quête', color: 'border-arcane-500/50 text-arcane-500' },
+  npc: { label: 'PNJ', color: 'border-ember-500/50 text-ember-400' },
+  pacing: { label: 'Rythme', color: 'border-emerald-500/50 text-emerald-400' },
+  worldbuilding: { label: 'Univers', color: 'border-blue-500/50 text-blue-400' },
+  combat: { label: 'Combat', color: 'border-red-500/50 text-red-400' },
 }
 
 export function NotesPage() {
@@ -35,7 +44,13 @@ export function NotesPage() {
     onError: () => pushToast('Claude could not process that note — check the note history for details.', 'error'),
   })
 
+  const recommendations = useMutation({
+    mutationFn: () => fetchGmRecommendations(campaignId!),
+    onError: (error: Error) => pushToast(error.message, 'error'),
+  })
+
   return (
+    <div className="flex flex-col gap-8">
     <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]">
       <section>
         {isGm ? (
@@ -118,6 +133,48 @@ export function NotesPage() {
           ))}
         </ul>
       </section>
+    </div>
+
+    {isGm && (
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-lg text-parchment-100">Recommandations</h2>
+            <p className="text-sm text-parchment-200/60">
+              Une lecture algorithmique de l'état actuel de la campagne — pas une conversation, juste une liste
+              fraîche à chaque clic.
+            </p>
+          </div>
+          <button
+            onClick={() => recommendations.mutate()}
+            disabled={recommendations.isPending}
+            className="shrink-0 rounded-md border border-arcane-500/50 px-3 py-1.5 text-sm text-arcane-500 hover:bg-arcane-500/10 disabled:opacity-50"
+          >
+            {recommendations.isPending
+              ? 'Analyse…'
+              : recommendations.data
+                ? '🔄 Régénérer'
+                : '🧠 Générer des recommandations'}
+          </button>
+        </div>
+
+        {recommendations.data && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {recommendations.data.map((rec: Recommendation, i: number) => (
+              <div key={i} className="rounded-lg border border-ink-700 bg-ink-900 p-3 text-sm">
+                <span
+                  className={`inline-block rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${CATEGORY_STYLE[rec.category].color}`}
+                >
+                  {CATEGORY_STYLE[rec.category].label}
+                </span>
+                <h3 className="mt-2 font-medium text-parchment-100">{rec.title}</h3>
+                <p className="mt-1 text-parchment-200/70">{rec.detail}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    )}
     </div>
   )
 }
