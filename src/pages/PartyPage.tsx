@@ -1,19 +1,24 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { createCharacter, useParty } from '@/hooks/useParty'
 import { findTokenLocation } from '@/hooks/useBattleMap'
+import { useCampaignMembers, inviteMemberToCampaign, removeCampaignMember, type CampaignMember } from '@/hooks/useCampaigns'
+import { InvitePicker } from '@/components/InvitePicker'
+import type { Profile } from '@/hooks/useProfiles'
 import { useUiStore } from '@/store/useUiStore'
-import type { Character } from '@/types/database'
+import type { Campaign, Character } from '@/types/database'
 
 export function PartyPage() {
   const { campaignId } = useParams<{ campaignId: string }>()
+  const { campaign } = useOutletContext<{ campaign: Campaign }>()
   const { user } = useAuth()
   const { data: party, loading } = useParty(campaignId)
   const [showForm, setShowForm] = useState(false)
   const navigate = useNavigate()
   const pushToast = useUiStore((s) => s.pushToast)
+  const isGm = user?.id === campaign.gmId
 
   async function openOnMap(character: Character) {
     if (!campaignId) return
@@ -28,6 +33,8 @@ export function PartyPage() {
 
   return (
     <div>
+      {isGm && campaignId && <RosterSection campaignId={campaignId} gmId={campaign.gmId} />}
+
       <div className="mb-6 flex items-center justify-between">
         <h2 className="font-display text-xl text-parchment-100">Party</h2>
         <button
@@ -57,6 +64,97 @@ export function PartyPage() {
         ))}
       </div>
     </div>
+  )
+}
+
+/**
+ * GM-only roster management — invite known users onto the campaign and see
+ * who's already in, any time after creation (not just at the create-form
+ * step). Backed by the same "gm invites known users" / "gm removes members"
+ * RLS policies as campaign creation, just called on demand.
+ */
+function RosterSection({ campaignId, gmId }: { campaignId: string; gmId: string }) {
+  const { members, loading } = useCampaignMembers(campaignId)
+  const pushToast = useUiStore((s) => s.pushToast)
+  const queryClient = useQueryClient()
+
+  const inviteMutation = useMutation({
+    mutationFn: (userId: string) => inviteMemberToCampaign(campaignId, userId),
+    onSuccess: () => {
+      pushToast('Joueur invité.', 'success')
+      queryClient.invalidateQueries({ queryKey: ['campaign_members', campaignId] })
+    },
+    onError: () => pushToast("Impossible d'inviter ce joueur.", 'error'),
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: (userId: string) => removeCampaignMember(campaignId, userId),
+    onError: () => pushToast('Impossible de retirer ce joueur.', 'error'),
+  })
+
+  function copyInviteLink() {
+    const url = `${window.location.origin}/campaign/${campaignId}/join`
+    navigator.clipboard
+      .writeText(url)
+      .then(() => pushToast("Lien d'invitation copié.", 'success'))
+      .catch(() => pushToast('Impossible de copier le lien.', 'error'))
+  }
+
+  const alreadyInvited = members.map((m) => m.userId)
+
+  return (
+    <section className="mb-8 rounded-xl border border-ink-700 bg-ink-900 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="font-display text-lg text-parchment-100">Roster</h3>
+        <button onClick={copyInviteLink} className="text-xs text-parchment-200/50 hover:text-ember-400">
+          🔗 Copier le lien d'invitation
+        </button>
+      </div>
+
+      {!loading && members.length > 0 && (
+        <ul className="mb-4 flex flex-col gap-1.5">
+          {members.map((m) => (
+            <RosterRow
+              key={m.userId}
+              member={m}
+              canRemove={m.role === 'player'}
+              onRemove={() => removeMutation.mutate(m.userId)}
+            />
+          ))}
+        </ul>
+      )}
+
+      <InvitePicker
+        excludeUserId={gmId}
+        invitees={members.filter((m): m is CampaignMember & { profile: Profile } => m.profile != null).map((m) => m.profile)}
+        hideChips
+        onAdd={(profile) => {
+          if (alreadyInvited.includes(profile.id)) return
+          inviteMutation.mutate(profile.id)
+        }}
+        onRemove={() => {}}
+      />
+    </section>
+  )
+}
+
+function RosterRow({ member, canRemove, onRemove }: { member: CampaignMember; canRemove: boolean; onRemove: () => void }) {
+  const label = member.profile?.displayName ?? member.profile?.email ?? 'Joueur sans profil'
+  return (
+    <li className="flex items-center justify-between rounded-md bg-ink-800 px-3 py-1.5 text-sm">
+      <span className="flex items-center gap-2">
+        {member.profile?.avatarUrl && <img src={member.profile.avatarUrl} alt="" className="h-5 w-5 rounded-full" />}
+        <span className="text-parchment-100">{label}</span>
+        {member.role === 'gm' && (
+          <span className="rounded-full border border-ember-500/40 px-1.5 py-0.5 text-[10px] uppercase text-ember-400">MJ</span>
+        )}
+      </span>
+      {canRemove && (
+        <button onClick={onRemove} className="text-xs text-parchment-200/40 hover:text-red-400">
+          Retirer
+        </button>
+      )}
+    </li>
   )
 }
 

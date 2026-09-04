@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { mapCampaign, type CampaignRow } from '@/lib/mappers'
+import type { Profile } from '@/hooks/useProfiles'
 import type { Campaign, RpgSystem } from '@/types/database'
 
 /** Campaigns where the current user is GM or a player. No explicit filter is
@@ -115,4 +116,110 @@ export async function createCampaign(params: {
   }
 
   return campaignId
+}
+
+export interface CampaignMember {
+  userId: string
+  role: 'gm' | 'player'
+  joinedAt: string
+  profile: Profile | null
+}
+
+/**
+ * The campaign's roster (GM + players), live. There's no FK PostgREST can
+ * embed on directly — campaign_members.user_id and profiles.id both point
+ * at auth.users independently rather than at each other — so this fetches
+ * membership rows and profiles separately and merges them client-side.
+ */
+export function useCampaignMembers(campaignId: string | undefined) {
+  const [members, setMembers] = useState<CampaignMember[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!campaignId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMembers([])
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setLoading(true)
+
+    async function load() {
+      const { data: memberRows, error } = await supabase
+        .from('campaign_members')
+        .select('user_id, role, joined_at')
+        .eq('campaign_id', campaignId as string)
+        .order('joined_at', { ascending: true })
+      if (cancelled || error || !memberRows) {
+        if (!cancelled) setLoading(false)
+        return
+      }
+
+      const userIds = memberRows.map((m) => m.user_id as string)
+      const { data: profileRows } = userIds.length
+        ? await supabase.from('profiles').select('*').in('id', userIds)
+        : { data: [] }
+      if (cancelled) return
+
+      const profileById = new Map((profileRows ?? []).map((p) => [p.id as string, p]))
+      setMembers(
+        memberRows.map((m) => {
+          const p = profileById.get(m.user_id as string)
+          return {
+            userId: m.user_id as string,
+            role: m.role as 'gm' | 'player',
+            joinedAt: m.joined_at as string,
+            profile: p
+              ? {
+                  id: p.id as string,
+                  email: p.email as string | null,
+                  displayName: p.display_name as string | null,
+                  avatarUrl: p.avatar_url as string | null,
+                  isAnonymous: p.is_anonymous as boolean,
+                }
+              : null,
+          }
+        }),
+      )
+      setLoading(false)
+    }
+
+    load()
+
+    const channel = supabase
+      .channel(`campaign_members:${campaignId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'campaign_members', filter: `campaign_id=eq.${campaignId}` },
+        () => load(),
+      )
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      supabase.removeChannel(channel)
+    }
+  }, [campaignId])
+
+  return { members, loading }
+}
+
+/** Add a known user (already in `profiles`) to a campaign already underway —
+ * same "gm invites known users" RLS policy that backs invite-at-creation,
+ * just called on demand instead of only at insert time. */
+export async function inviteMemberToCampaign(campaignId: string, userId: string): Promise<void> {
+  const { error } = await supabase.from('campaign_members').insert({ campaign_id: campaignId, user_id: userId, role: 'player' })
+  if (error) throw error
+}
+
+/** GM-only, backed by the "gm removes members" RLS policy. */
+export async function removeCampaignMember(campaignId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('campaign_members')
+    .delete()
+    .eq('campaign_id', campaignId)
+    .eq('user_id', userId)
+  if (error) throw error
 }
