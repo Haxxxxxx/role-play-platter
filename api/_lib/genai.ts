@@ -3,7 +3,7 @@ import { FunctionCallingConfigMode, GoogleGenAI, Type, type FunctionDeclaration 
 // Gemini's free tier (a key from aistudio.google.com/apikey, no credit card)
 // is what this app runs on instead of a paid key. Flash is the
 // fast/cheap-eligible model — plenty for structured extraction like this.
-export const GEMINI_MODEL = 'gemini-2.5-flash'
+export const GEMINI_MODEL = 'gemini-3.6-flash'
 
 export { Type }
 export type { FunctionDeclaration }
