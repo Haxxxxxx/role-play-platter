@@ -50,6 +50,14 @@ export interface ApplyUpdateResult {
  * transaction primitive over the REST client without a Postgres function) —
  * acceptable for a single GM note today; worth moving into an RPC if this
  * ever needs cross-table atomicity guarantees.
+ *
+ * Every write's `error` is checked and collected — a *Touched counter only
+ * ever counts a row that was actually confirmed written. If anything failed,
+ * this throws with the collected messages instead of returning as if
+ * everything landed: the caller marks the note 'error' either way, so a
+ * partial failure must never come back looking like full success (that was
+ * a real bug here — every counter used to increment unconditionally, so a
+ * silently-failed write and a real one were indistinguishable to the GM).
  */
 export async function applyCampaignUpdate(params: {
   supabase: SupabaseClient
@@ -64,43 +72,49 @@ export async function applyCampaignUpdate(params: {
   const { supabase, campaignId, noteId, update, existingNpcs, existingLocations, existingQuests, partyRoster } =
     params
 
+  const failures: string[] = []
+
   // Locations first — timeline events below reference them by resolved id.
   const locationIdByName = new Map<string, string>()
   for (const loc of update.locations) {
     const match = findByName(existingLocations, loc.name)
-    const id = match
-      ? (await supabase
+    const { data, error } = match
+      ? await supabase
           .from('locations')
           .update({ description: loc.description, source_note_id: noteId })
           .eq('id', match.id)
           .select('id')
           .single()
-        ).data?.id
-      : (await supabase
+      : await supabase
           .from('locations')
           .insert({ campaign_id: campaignId, name: loc.name, description: loc.description, source_note_id: noteId })
           .select('id')
           .single()
-        ).data?.id
-    if (id) locationIdByName.set(loc.name.trim().toLowerCase(), id)
+    if (error) {
+      failures.push(`location "${loc.name}": ${error.message}`)
+      continue
+    }
+    if (data?.id) locationIdByName.set(loc.name.trim().toLowerCase(), data.id)
   }
 
   let npcsTouched = 0
   for (const npc of update.npcs) {
     const match = findByName(existingNpcs, npc.name)
-    if (match) {
-      await supabase
-        .from('npcs')
-        .update({ description: npc.description, disposition: npc.disposition, source_note_id: noteId })
-        .eq('id', match.id)
-    } else {
-      await supabase.from('npcs').insert({
-        campaign_id: campaignId,
-        name: npc.name,
-        description: npc.description,
-        disposition: npc.disposition,
-        source_note_id: noteId,
-      })
+    const { error } = match
+      ? await supabase
+          .from('npcs')
+          .update({ description: npc.description, disposition: npc.disposition, source_note_id: noteId })
+          .eq('id', match.id)
+      : await supabase.from('npcs').insert({
+          campaign_id: campaignId,
+          name: npc.name,
+          description: npc.description,
+          disposition: npc.disposition,
+          source_note_id: noteId,
+        })
+    if (error) {
+      failures.push(`NPC "${npc.name}": ${error.message}`)
+      continue
     }
     npcsTouched++
   }
@@ -108,19 +122,21 @@ export async function applyCampaignUpdate(params: {
   let questsTouched = 0
   for (const quest of update.quests) {
     const match = existingQuests.find((q) => q.title.trim().toLowerCase() === quest.title.trim().toLowerCase())
-    if (match) {
-      await supabase
-        .from('quests')
-        .update({ description: quest.description, status: quest.status, source_note_id: noteId })
-        .eq('id', match.id)
-    } else {
-      await supabase.from('quests').insert({
-        campaign_id: campaignId,
-        title: quest.title,
-        description: quest.description,
-        status: quest.status,
-        source_note_id: noteId,
-      })
+    const { error } = match
+      ? await supabase
+          .from('quests')
+          .update({ description: quest.description, status: quest.status, source_note_id: noteId })
+          .eq('id', match.id)
+      : await supabase.from('quests').insert({
+          campaign_id: campaignId,
+          title: quest.title,
+          description: quest.description,
+          status: quest.status,
+          source_note_id: noteId,
+        })
+    if (error) {
+      failures.push(`quest "${quest.title}": ${error.message}`)
+      continue
     }
     questsTouched++
   }
@@ -137,7 +153,11 @@ export async function applyCampaignUpdate(params: {
       tags: event.tags,
     }))
     const { error } = await supabase.from('timeline_events').insert(rows)
-    if (!error) timelineEventsCreated = rows.length
+    if (error) {
+      failures.push(`timeline events: ${error.message}`)
+    } else {
+      timelineEventsCreated = rows.length
+    }
   }
 
   // Item changes need a read of the current inventory jsonb per character,
@@ -156,8 +176,20 @@ export async function applyCampaignUpdate(params: {
 
   let itemChangesApplied = 0
   for (const [characterId, changes] of changesByCharacterId) {
-    const { data: charRow } = await supabase.from('characters').select('inventory').eq('id', characterId).single()
+    const { data: charRow, error: readError } = await supabase
+      .from('characters')
+      .select('inventory')
+      .eq('id', characterId)
+      .single()
+    if (readError) {
+      // Must not fall through to writing back an empty array here — that
+      // would silently wipe this character's real inventory instead of
+      // just failing to apply the delta.
+      failures.push(`inventory for character ${characterId}: ${readError.message}`)
+      continue
+    }
     const inventory: InventoryItem[] = (charRow?.inventory as InventoryItem[] | undefined) ?? []
+    let appliedForThisCharacter = 0
 
     for (const change of changes) {
       const idx = inventory.findIndex((i) => i.name.trim().toLowerCase() === change.itemName.trim().toLowerCase())
@@ -184,16 +216,25 @@ export async function applyCampaignUpdate(params: {
           })
         }
       }
-      itemChangesApplied++
+      appliedForThisCharacter++
     }
 
-    await supabase.from('characters').update({ inventory }).eq('id', characterId)
+    const { error: writeError } = await supabase.from('characters').update({ inventory }).eq('id', characterId)
+    if (writeError) {
+      failures.push(`inventory for character ${characterId}: ${writeError.message}`)
+      continue
+    }
+    itemChangesApplied += appliedForThisCharacter
+  }
+
+  if (failures.length > 0) {
+    throw new Error(`Partial write failure — ${failures.length} change(s) did not save: ${failures.join('; ')}`)
   }
 
   return {
     timelineEventsCreated,
     npcsTouched,
-    locationsTouched: update.locations.length,
+    locationsTouched: locationIdByName.size,
     questsTouched,
     itemChangesApplied,
   }

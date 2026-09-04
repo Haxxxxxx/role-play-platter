@@ -105,12 +105,19 @@ export function ProfilePage() {
         </ul>
       </div>
 
-      <button
-        onClick={() => signOutUser()}
-        className="w-full rounded-md border border-ink-700 py-2 text-sm text-parchment-200/70 hover:bg-ink-800"
-      >
-        Sign out
-      </button>
+      {user.is_anonymous ? (
+        <p className="text-center text-xs text-parchment-200/40">
+          Session invité — pas de déconnexion possible sans lier un compte Google d'abord (un compte invité n'a pas
+          de mot de passe : se déconnecter le perdrait pour toujours).
+        </p>
+      ) : (
+        <button
+          onClick={() => signOutUser()}
+          className="w-full rounded-md border border-ink-700 py-2 text-sm text-parchment-200/70 hover:bg-ink-800"
+        >
+          Sign out
+        </button>
+      )}
     </div>
   )
 }
