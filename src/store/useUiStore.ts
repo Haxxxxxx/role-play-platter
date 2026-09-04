@@ -13,7 +13,7 @@ interface UiState {
 }
 
 /** Global, non-persisted UI state (toasts, transient flags). Campaign/chronicle
- * data itself lives in Firestore and streams in via the real-time hooks — it
+ * data itself lives in Postgres and streams in via the real-time hooks — it
  * has no business being duplicated into a client store. */
 export const useUiStore = create<UiState>((set) => ({
   toasts: [],

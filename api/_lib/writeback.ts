@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { FieldValue, type DocumentReference, type Firestore } from 'firebase-admin/firestore'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { CampaignUpdate } from './schema.js'
 
-// Duplicated (not imported) from src/types/firestore.ts on the frontend —
-// this package builds independently of the Vite app. If the shape drifts,
+// Duplicated (not imported) from src/types/database.ts on the frontend —
+// this function deploys independently of the Vite app. If the shape drifts,
 // extract both into a shared workspace package.
 interface InventoryItem {
   id: string
@@ -39,16 +39,21 @@ export interface ApplyUpdateResult {
 }
 
 /**
- * Writes Claude's (already zod-validated) structured update into Firestore:
+ * Writes Claude's (already zod-validated) structured update into Postgres:
  * upserts NPCs/locations/quests by case-insensitive name match against what
- * the campaign already knows, appends timeline events, and applies inventory
- * deltas to matching party members. One batch per note for atomicity of the
- * writes; the per-character inventory reads happen first since arrays can't
- * be partially patched.
+ * the campaign already knows, inserts timeline events, and applies
+ * inventory deltas to matching party members. Runs with the service-role
+ * client, so it bypasses RLS entirely — this function is the only thing
+ * trusted to write "AI-structured" rows.
+ *
+ * Writes happen sequentially rather than in one transaction (no multi-table
+ * transaction primitive over the REST client without a Postgres function) —
+ * acceptable for a single GM note today; worth moving into an RPC if this
+ * ever needs cross-table atomicity guarantees.
  */
 export async function applyCampaignUpdate(params: {
-  db: Firestore
-  campaignRef: DocumentReference
+  supabase: SupabaseClient
+  campaignId: string
   noteId: string
   update: CampaignUpdate
   existingNpcs: EntityRef[]
@@ -56,95 +61,87 @@ export async function applyCampaignUpdate(params: {
   existingQuests: QuestRef[]
   partyRoster: EntityRef[]
 }): Promise<ApplyUpdateResult> {
-  const { db, campaignRef, noteId, update, existingNpcs, existingLocations, existingQuests, partyRoster } = params
-  const batch = db.batch()
-  const now = FieldValue.serverTimestamp()
+  const { supabase, campaignId, noteId, update, existingNpcs, existingLocations, existingQuests, partyRoster } =
+    params
 
   // Locations first — timeline events below reference them by resolved id.
   const locationIdByName = new Map<string, string>()
   for (const loc of update.locations) {
     const match = findByName(existingLocations, loc.name)
-    const ref = match ? campaignRef.collection('locations').doc(match.id) : campaignRef.collection('locations').doc()
-    locationIdByName.set(loc.name.trim().toLowerCase(), ref.id)
-    batch.set(
-      ref,
-      {
-        campaignId: campaignRef.id,
-        name: loc.name,
-        description: loc.description,
-        sourceNoteId: noteId,
-        updatedAt: now,
-        ...(match ? {} : { createdAt: now }),
-      },
-      { merge: true },
-    )
+    const id = match
+      ? (await supabase
+          .from('locations')
+          .update({ description: loc.description, source_note_id: noteId })
+          .eq('id', match.id)
+          .select('id')
+          .single()
+        ).data?.id
+      : (await supabase
+          .from('locations')
+          .insert({ campaign_id: campaignId, name: loc.name, description: loc.description, source_note_id: noteId })
+          .select('id')
+          .single()
+        ).data?.id
+    if (id) locationIdByName.set(loc.name.trim().toLowerCase(), id)
   }
 
   let npcsTouched = 0
   for (const npc of update.npcs) {
     const match = findByName(existingNpcs, npc.name)
-    const ref = match ? campaignRef.collection('npcs').doc(match.id) : campaignRef.collection('npcs').doc()
-    batch.set(
-      ref,
-      {
-        campaignId: campaignRef.id,
+    if (match) {
+      await supabase
+        .from('npcs')
+        .update({ description: npc.description, disposition: npc.disposition, source_note_id: noteId })
+        .eq('id', match.id)
+    } else {
+      await supabase.from('npcs').insert({
+        campaign_id: campaignId,
         name: npc.name,
         description: npc.description,
         disposition: npc.disposition,
-        portraitUrl: null,
-        sourceNoteId: noteId,
-        updatedAt: now,
-        ...(match ? {} : { createdAt: now }),
-      },
-      { merge: true },
-    )
+        source_note_id: noteId,
+      })
+    }
     npcsTouched++
   }
 
   let questsTouched = 0
   for (const quest of update.quests) {
     const match = existingQuests.find((q) => q.title.trim().toLowerCase() === quest.title.trim().toLowerCase())
-    const ref = match ? campaignRef.collection('quests').doc(match.id) : campaignRef.collection('quests').doc()
-    batch.set(
-      ref,
-      {
-        campaignId: campaignRef.id,
+    if (match) {
+      await supabase
+        .from('quests')
+        .update({ description: quest.description, status: quest.status, source_note_id: noteId })
+        .eq('id', match.id)
+    } else {
+      await supabase.from('quests').insert({
+        campaign_id: campaignId,
         title: quest.title,
         description: quest.description,
         status: quest.status,
-        relatedNpcIds: [],
-        relatedLocationIds: [],
-        sourceNoteId: noteId,
-        updatedAt: now,
-        ...(match ? {} : { createdAt: now }),
-      },
-      { merge: true },
-    )
+        source_note_id: noteId,
+      })
+    }
     questsTouched++
   }
 
   let timelineEventsCreated = 0
-  update.timelineEvents.forEach((event, idx) => {
-    const ref = campaignRef.collection('timeline').doc()
-    const locationId = event.locationName
-      ? (locationIdByName.get(event.locationName.trim().toLowerCase()) ?? null)
-      : null
-    batch.set(ref, {
-      campaignId: campaignRef.id,
+  if (update.timelineEvents.length > 0) {
+    const rows = update.timelineEvents.map((event, idx) => ({
+      campaign_id: campaignId,
       title: event.title,
       description: event.description,
       order: Date.now() + idx,
-      sourceNoteId: noteId,
-      locationId,
+      source_note_id: noteId,
+      location_id: event.locationName ? (locationIdByName.get(event.locationName.trim().toLowerCase()) ?? null) : null,
       tags: event.tags,
-      createdAt: now,
-      updatedAt: now,
-    })
-    timelineEventsCreated++
-  })
+    }))
+    const { error } = await supabase.from('timeline_events').insert(rows)
+    if (!error) timelineEventsCreated = rows.length
+  }
 
-  // Item changes need a read of the current inventory array per character,
-  // so group by character and resolve before adding to the batch.
+  // Item changes need a read of the current inventory jsonb per character,
+  // so group by character and resolve before writing.
   const charByName = new Map<string, EntityRef>()
   for (const c of partyRoster) charByName.set(c.name.trim().toLowerCase(), c)
 
@@ -159,9 +156,8 @@ export async function applyCampaignUpdate(params: {
 
   let itemChangesApplied = 0
   for (const [characterId, changes] of changesByCharacterId) {
-    const charRef = campaignRef.collection('party').doc(characterId)
-    const charSnap = await charRef.get()
-    const inventory: InventoryItem[] = (charSnap.data()?.inventory as InventoryItem[] | undefined) ?? []
+    const { data: charRow } = await supabase.from('characters').select('inventory').eq('id', characterId).single()
+    const inventory: InventoryItem[] = (charRow?.inventory as InventoryItem[] | undefined) ?? []
 
     for (const change of changes) {
       const idx = inventory.findIndex((i) => i.name.trim().toLowerCase() === change.itemName.trim().toLowerCase())
@@ -191,10 +187,8 @@ export async function applyCampaignUpdate(params: {
       itemChangesApplied++
     }
 
-    batch.update(charRef, { inventory, updatedAt: now })
+    await supabase.from('characters').update({ inventory }).eq('id', characterId)
   }
-
-  await batch.commit()
 
   return {
     timelineEventsCreated,

@@ -1,11 +1,7 @@
-import type { Timestamp } from 'firebase/firestore'
-
-/** Fields every top-level document carries. */
-export interface BaseDoc {
-  id: string
-  createdAt: Timestamp
-  updatedAt: Timestamp
-}
+/** App-facing (camelCase) shapes. Rows come back from Postgres snake_case —
+ * src/lib/mappers.ts converts at the query boundary so the rest of the app
+ * (and the pages carried over from the Firebase version) never sees a
+ * snake_case field. */
 
 export type RpgSystem =
   | 'D&D 5e'
@@ -14,13 +10,17 @@ export type RpgSystem =
   | 'Blades in the Dark'
   | 'Custom / Homebrew'
 
-export interface Campaign extends BaseDoc {
+export interface BaseRow {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Campaign extends BaseRow {
   name: string
   system: RpgSystem
   description: string
   gmId: string
-  memberIds: string[]
-  /** True while a note is being structured by Claude, to disable double-submits. */
   isProcessingNotes: boolean
 }
 
@@ -39,11 +39,10 @@ export interface InventoryItem {
   quantity: number
   description: string
   equipped: boolean
-  /** id of the sessionNote that introduced/last changed this item, for provenance. */
   sourceNoteId: string | null
 }
 
-export interface Character extends BaseDoc {
+export interface Character extends BaseRow {
   campaignId: string
   name: string
   playerName: string
@@ -61,23 +60,21 @@ export interface Character extends BaseDoc {
 export type SessionNoteKind = 'session-recap' | 'item-update' | 'freeform'
 export type SessionNoteStatus = 'pending' | 'processing' | 'processed' | 'error'
 
-export interface SessionNote extends BaseDoc {
+export interface SessionNote extends BaseRow {
   campaignId: string
   authorId: string
   kind: SessionNoteKind
   rawText: string
   status: SessionNoteStatus
-  /** Claude's narrated recap of this note, once processed. */
   narrativeRecap: string | null
   errorMessage: string | null
-  processedAt: Timestamp | null
+  processedAt: string | null
 }
 
-export interface TimelineEvent extends BaseDoc {
+export interface TimelineEvent extends BaseRow {
   campaignId: string
   title: string
   description: string
-  /** Monotonic ordering key (in-fiction sequence), not a wall-clock date. */
   order: number
   sourceNoteId: string | null
   locationId: string | null
@@ -86,17 +83,16 @@ export interface TimelineEvent extends BaseDoc {
 
 export type NpcDisposition = 'ally' | 'neutral' | 'enemy' | 'unknown'
 
-export interface Npc extends BaseDoc {
+export interface Npc extends BaseRow {
   campaignId: string
   name: string
   description: string
   disposition: NpcDisposition
-  /** Text-only placeholder until an image-gen provider is wired in. */
   portraitUrl: string | null
   sourceNoteId: string | null
 }
 
-export interface Location extends BaseDoc {
+export interface Location extends BaseRow {
   campaignId: string
   name: string
   description: string
@@ -105,7 +101,7 @@ export interface Location extends BaseDoc {
 
 export type QuestStatus = 'active' | 'completed' | 'failed'
 
-export interface Quest extends BaseDoc {
+export interface Quest extends BaseRow {
   campaignId: string
   title: string
   description: string
@@ -116,7 +112,7 @@ export interface Quest extends BaseDoc {
 }
 
 /** Phase 2 — battle map. Typed now so the schema doesn't need to shift later. */
-export interface BattleMap extends BaseDoc {
+export interface BattleMap extends BaseRow {
   campaignId: string
   name: string
   gridWidth: number

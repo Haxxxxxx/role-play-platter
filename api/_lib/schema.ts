@@ -3,8 +3,8 @@ import { z } from 'zod'
 /**
  * Shape Claude must fill via forced tool_use. Validated with zod before we
  * trust any of it — model output is untrusted input just like a client
- * request, so it gets the same structural validation before touching
- * Firestore.
+ * request, so it gets the same structural validation before touching the
+ * database.
  */
 export const campaignUpdateSchema = z.object({
   narrativeRecap: z.string().min(1).max(2000),

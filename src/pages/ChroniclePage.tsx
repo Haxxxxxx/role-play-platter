@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { useNpcs, useQuests, useTimeline } from '@/hooks/useChronicle'
-import type { NpcDisposition, QuestStatus } from '@/types/firestore'
+import type { NpcDisposition, QuestStatus } from '@/types/database'
 
 const DISPOSITION_COLOR: Record<NpcDisposition, string> = {
   ally: 'text-emerald-400',

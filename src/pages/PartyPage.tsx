@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { createCharacter, useParty } from '@/hooks/useParty'
 import { useUiStore } from '@/store/useUiStore'
-import type { Character } from '@/types/firestore'
+import type { Character } from '@/types/database'
 
 export function PartyPage() {
   const { campaignId } = useParams<{ campaignId: string }>()
@@ -27,7 +27,7 @@ export function PartyPage() {
       {showForm && campaignId && (
         <NewCharacterForm
           campaignId={campaignId}
-          ownerId={user?.uid ?? null}
+          ownerId={user?.id ?? null}
           onDone={() => setShowForm(false)}
         />
       )}

@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSessionNotes } from '@/hooks/useChronicle'
 import { submitGmNote } from '@/hooks/useNotesPipeline'
 import { useUiStore } from '@/store/useUiStore'
-import type { SessionNoteKind } from '@/types/firestore'
+import type { SessionNoteKind } from '@/types/database'
 
 const KIND_LABEL: Record<SessionNoteKind, string> = {
   'session-recap': 'Session recap',
@@ -22,7 +22,7 @@ export function NotesPage() {
   const pushToast = useUiStore((s) => s.pushToast)
 
   const submit = useMutation({
-    mutationFn: () => submitGmNote({ campaignId: campaignId!, authorId: user!.uid, kind, rawText: text }),
+    mutationFn: () => submitGmNote({ campaignId: campaignId!, authorId: user!.id, kind, rawText: text }),
     onSuccess: (result) => {
       setText('')
       pushToast(

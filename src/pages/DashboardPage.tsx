@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth, signOutUser } from '@/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 import { useCampaigns, createCampaign } from '@/hooks/useCampaigns'
-import type { RpgSystem } from '@/types/firestore'
+import type { RpgSystem } from '@/types/database'
 import { useUiStore } from '@/store/useUiStore'
 
 const SYSTEMS: RpgSystem[] = ['D&D 5e', 'Pathfinder 2e', 'Call of Cthulhu', 'Blades in the Dark', 'Custom / Homebrew']
 
 export function DashboardPage() {
   const { user } = useAuth()
-  const { campaigns, loading } = useCampaigns(user?.uid ?? null)
+  const { campaigns, loading } = useCampaigns(user?.id ?? null)
   const [name, setName] = useState('')
   const [system, setSystem] = useState<RpgSystem>('D&D 5e')
   const [description, setDescription] = useState('')
@@ -18,7 +18,7 @@ export function DashboardPage() {
   const queryClient = useQueryClient()
 
   const createMutation = useMutation({
-    mutationFn: () => createCampaign({ name, system, description, gmId: user!.uid }),
+    mutationFn: () => createCampaign({ name, system, description, gmId: user!.id }),
     onSuccess: () => {
       setName('')
       setDescription('')
@@ -30,17 +30,10 @@ export function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl text-parchment-100">Your Campaigns</h1>
-          <p className="text-sm text-parchment-200/60">{user?.displayName}</p>
-        </div>
-        <button
-          onClick={() => signOutUser()}
-          className="rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800"
-        >
-          Sign out
-        </button>
+      <header className="mb-8">
+        <h1 className="font-display text-3xl text-parchment-100">Your Campaigns</h1>
+        {/* Dev-phase: no accounts yet, so no user identity to show or sign
+            out of — see useAuth. Comes back once real login lands. */}
       </header>
 
       <section className="mb-10 rounded-xl border border-ink-700 bg-ink-900 p-5">

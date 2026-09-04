@@ -1,49 +1,51 @@
-import { useMemo } from 'react'
-import {
-  addDoc,
-  collection,
-  doc,
-  onSnapshot,
-  query,
-  serverTimestamp,
-  where,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-} from 'firebase/firestore'
 import { useEffect, useState } from 'react'
-import { db } from '@/lib/firebase'
-import type { Campaign, RpgSystem } from '@/types/firestore'
+import { supabase } from '@/lib/supabase'
+import { mapCampaign, type CampaignRow } from '@/lib/mappers'
+import type { Campaign, RpgSystem } from '@/types/database'
 
-function mapCampaign(snap: QueryDocumentSnapshot<DocumentData>): Campaign {
-  return { id: snap.id, ...snap.data() } as Campaign
-}
-
-/** Campaigns where the current user is GM or a player. */
+/** Campaigns where the current user is GM or a player. No explicit filter is
+ * needed — the "members can read their campaigns" RLS policy already scopes
+ * every select (and, with Realtime respecting RLS, every change event) to
+ * rows the signed-in user belongs to. */
 export function useCampaigns(uid: string | null) {
-  const [data, setData] = useState<Campaign[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
 
-  const q = useMemo(
-    () => (uid ? query(collection(db, 'campaigns'), where('memberIds', 'array-contains', uid)) : null),
-    [uid],
-  )
-
   useEffect(() => {
-    if (!q) {
-      // Resetting to the disabled (signed-out) state, not reacting to an external event.
+    if (!uid) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setData([])
+      setCampaigns([])
       setLoading(false)
       return
     }
-    setLoading(true)
-    return onSnapshot(q, (snap) => {
-      setData(snap.docs.map(mapCampaign))
-      setLoading(false)
-    })
-  }, [q])
 
-  return { campaigns: data, loading }
+    let cancelled = false
+    setLoading(true)
+
+    async function load() {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (cancelled) return
+      if (!error && data) setCampaigns((data as CampaignRow[]).map(mapCampaign))
+      setLoading(false)
+    }
+
+    load()
+
+    const channel = supabase
+      .channel('campaigns:mine')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns' }, () => load())
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      supabase.removeChannel(channel)
+    }
+  }, [uid])
+
+  return { campaigns, loading }
 }
 
 export function useCampaign(campaignId: string | undefined) {
@@ -52,17 +54,37 @@ export function useCampaign(campaignId: string | undefined) {
 
   useEffect(() => {
     if (!campaignId) {
-      // Resetting to the disabled state, not reacting to an external event.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCampaign(null)
       setLoading(false)
       return
     }
+
+    let cancelled = false
     setLoading(true)
-    return onSnapshot(doc(db, 'campaigns', campaignId), (snap) => {
-      setCampaign(snap.exists() ? ({ id: snap.id, ...snap.data() } as Campaign) : null)
+
+    async function load() {
+      const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId as string).single()
+      if (cancelled) return
+      setCampaign(!error && data ? mapCampaign(data as CampaignRow) : null)
       setLoading(false)
-    })
+    }
+
+    load()
+
+    const channel = supabase
+      .channel(`campaigns:${campaignId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` },
+        () => load(),
+      )
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      supabase.removeChannel(channel)
+    }
   }, [campaignId])
 
   return { campaign, loading }
@@ -74,15 +96,11 @@ export async function createCampaign(params: {
   description: string
   gmId: string
 }): Promise<string> {
-  const ref = await addDoc(collection(db, 'campaigns'), {
-    name: params.name,
-    system: params.system,
-    description: params.description,
-    gmId: params.gmId,
-    memberIds: [params.gmId],
-    isProcessingNotes: false,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  })
-  return ref.id
+  const { data, error } = await supabase
+    .from('campaigns')
+    .insert({ name: params.name, system: params.system, description: params.description, gm_id: params.gmId })
+    .select('id')
+    .single()
+  if (error) throw error
+  return (data as { id: string }).id
 }
