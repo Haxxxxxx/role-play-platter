@@ -1,10 +1,30 @@
 import { useState } from 'react'
-import { continueAsGuest, signInWithGoogle } from '@/hooks/useAuth'
+import { startAsGuest, signInWithGoogle } from '@/hooks/useAuth'
 import { useUiStore } from '@/store/useUiStore'
 
+/**
+ * Primary path: type a name, start playing — no account required. The
+ * Google option underneath is for someone who already made an account
+ * previously (on a new device/browser) and wants to get back into it, not
+ * the main flow. Turning a guest into a permanent account happens later,
+ * from the Profile page, once there's actually something worth saving.
+ */
 export function LoginPage() {
   const pushToast = useUiStore((s) => s.pushToast)
-  const [pending, setPending] = useState<'google' | 'guest' | null>(null)
+  const [name, setName] = useState('')
+  const [pending, setPending] = useState<'guest' | 'google' | null>(null)
+
+  async function handleStart(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) return
+    setPending('guest')
+    try {
+      await startAsGuest(name)
+    } catch {
+      pushToast('Could not start a session — enable "Anonymous sign-ins" in Supabase Auth settings.', 'error')
+      setPending(null)
+    }
+  }
 
   async function handleGoogle() {
     setPending('google')
@@ -12,19 +32,6 @@ export function LoginPage() {
       await signInWithGoogle()
     } catch {
       pushToast('Sign-in failed — try again.', 'error')
-      setPending(null)
-    }
-  }
-
-  async function handleGuest() {
-    setPending('guest')
-    try {
-      await continueAsGuest()
-    } catch {
-      pushToast(
-        'Could not start a guest session — enable "Anonymous sign-ins" in Supabase Auth settings.',
-        'error',
-      )
       setPending(null)
     }
   }
@@ -38,22 +45,36 @@ export function LoginPage() {
           quest log, and party history write themselves.
         </p>
       </div>
-      <div className="flex flex-col items-center gap-3">
+
+      <form onSubmit={handleStart} className="flex w-full max-w-xs flex-col items-center gap-3">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Your name"
+          maxLength={40}
+          autoFocus
+          className="w-full rounded-lg border border-ink-700 bg-ink-800 px-4 py-2.5 text-center text-sm outline-none focus:border-ember-500"
+        />
         <button
-          onClick={handleGoogle}
-          disabled={pending !== null}
-          className="rounded-lg bg-ember-500 px-6 py-3 font-medium text-ink-950 transition hover:bg-ember-400 disabled:opacity-50"
+          type="submit"
+          disabled={pending !== null || !name.trim()}
+          className="w-full rounded-lg bg-ember-500 px-6 py-3 font-medium text-ink-950 transition hover:bg-ember-400 disabled:opacity-50"
         >
-          {pending === 'google' ? 'Redirecting…' : 'Sign in with Google'}
+          {pending === 'guest' ? 'Starting…' : 'Start playing'}
         </button>
-        <button
-          onClick={handleGuest}
-          disabled={pending !== null}
-          className="text-sm text-parchment-200/60 underline decoration-dotted hover:text-parchment-100 disabled:opacity-50"
-        >
-          {pending === 'guest' ? 'Starting…' : 'Continue as a guest instead'}
-        </button>
-      </div>
+        <p className="text-xs text-parchment-200/40">
+          No account needed — create and play a campaign right away. Save it to a real account later,
+          from your profile, whenever you're ready.
+        </p>
+      </form>
+
+      <button
+        onClick={handleGoogle}
+        disabled={pending !== null}
+        className="text-sm text-parchment-200/60 underline decoration-dotted hover:text-parchment-100 disabled:opacity-50"
+      >
+        {pending === 'google' ? 'Redirecting…' : 'Already have an account? Sign in with Google'}
+      </button>
     </div>
   )
 }

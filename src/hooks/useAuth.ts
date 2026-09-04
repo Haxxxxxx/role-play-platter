@@ -39,9 +39,20 @@ export function useAuth(): AuthState {
   return state
 }
 
-export async function continueAsGuest(): Promise<void> {
-  const { error } = await supabase.auth.signInAnonymously()
-  if (error) throw error
+/**
+ * The primary path in for a brand-new visitor: no account, just a name —
+ * try the whole app (create/edit/play a campaign) before ever signing up.
+ * Still a real anonymous Supabase user under the hood (so campaign
+ * ownership, RLS, everything works identically to a Google account), just
+ * with the name captured immediately instead of staying nameless. The
+ * `handle_user_updated` trigger (0007 migration) syncs it into `profiles`
+ * automatically, which is what makes a guest findable-by-name for invites.
+ */
+export async function startAsGuest(name: string): Promise<void> {
+  const { error: signInError } = await supabase.auth.signInAnonymously()
+  if (signInError) throw signInError
+  const { error: updateError } = await supabase.auth.updateUser({ data: { full_name: name.trim() } })
+  if (updateError) throw updateError
 }
 
 export async function signInWithGoogle(): Promise<void> {
