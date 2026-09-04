@@ -98,19 +98,17 @@ export function ChroniclePage() {
         <div>
           <h2 className="mb-3 font-display text-lg text-parchment-100">Lieux</h2>
           {locations.length === 0 && <p className="text-sm text-parchment-200/60">Aucun lieu découvert.</p>}
-          <ul className="flex flex-col gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {locations.map((loc) => (
-              <li key={loc.id}>
-                <button
-                  onClick={() => navigate(`/campaign/${campaignId}/map/${loc.id}`)}
-                  className="flex w-full items-center gap-2 rounded-lg border border-ink-700 bg-ink-900 p-2.5 text-left text-sm hover:border-ember-500/50"
-                >
-                  <span>📍</span>
-                  <span className="text-parchment-100">{loc.name}</span>
-                </button>
-              </li>
+              <button
+                key={loc.id}
+                onClick={() => navigate(`/campaign/${campaignId}/map/${loc.id}`)}
+                className="rounded-full border border-ink-700 bg-ink-900 px-3 py-1 text-sm text-parchment-100 hover:border-ember-500/50 hover:text-ember-400"
+              >
+                📍 {loc.name}
+              </button>
             ))}
-          </ul>
+          </div>
         </div>
 
         <div>
@@ -121,7 +119,7 @@ export function ChroniclePage() {
               <li key={npc.id}>
                 <button
                   onClick={() => openNpcOnMap(npc)}
-                  className="w-full rounded-lg border border-ink-700 bg-ink-900 p-3 text-left text-sm hover:border-ember-500/50"
+                  className="group w-full rounded-lg border border-ink-700 bg-ink-900 p-3 text-left text-sm hover:border-ember-500/50"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-parchment-100">{npc.name}</span>
@@ -130,6 +128,9 @@ export function ChroniclePage() {
                     </span>
                   </div>
                   <p className="mt-1 text-parchment-200/70">{npc.description}</p>
+                  <p className="mt-1.5 text-xs text-parchment-200/0 group-hover:text-ember-400/80">
+                    Voir sur la carte →
+                  </p>
                 </button>
               </li>
             ))}

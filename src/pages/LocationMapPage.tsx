@@ -91,7 +91,11 @@ export function LocationMapPage() {
         <>
           <div className="mb-1 flex items-center justify-between">
             <h2 className="font-display text-xl text-parchment-100">📍 {location.name}</h2>
-            <span className="text-xs uppercase tracking-wide text-parchment-200/50">
+            <span
+              className={`rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
+                isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
+              }`}
+            >
               {isGm ? 'Vue MJ — éditable' : 'Vue joueur'}
             </span>
           </div>

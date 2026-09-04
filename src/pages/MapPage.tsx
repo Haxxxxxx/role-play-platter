@@ -119,7 +119,11 @@ export function MapPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-xl text-parchment-100">{map.name}</h2>
-        <span className="text-xs uppercase tracking-wide text-parchment-200/50">
+        <span
+          className={`rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
+            isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
+          }`}
+        >
           {isGm ? 'Vue MJ — éditable' : 'Vue joueur'}
         </span>
       </div>
@@ -169,7 +173,7 @@ export function MapPage() {
       )}
 
       {pathMode && (
-        <p className="mb-3 text-xs text-ember-400">
+        <p className="mb-3 rounded-md border border-ember-500/30 bg-ember-500/10 px-3 py-2 text-xs text-ember-400">
           Mode chemin actif — cliquez deux pions pour les relier, puis continuez la chaîne. Cliquez à nouveau sur
           « Tracer un chemin » pour arrêter.
         </p>

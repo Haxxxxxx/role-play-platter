@@ -132,16 +132,7 @@ function CharacterSheet({ character, onOpenOnMap }: { character: Character; onOp
     <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
       <div className="flex items-baseline justify-between">
         <h3 className="font-display text-lg text-parchment-100">{character.name}</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-parchment-200/50">{character.playerName}</span>
-          <button
-            onClick={onOpenOnMap}
-            title="Voir sur la carte"
-            className="rounded-md border border-ink-700 px-1.5 py-0.5 text-xs text-parchment-200/60 hover:border-ember-500/50 hover:text-ember-400"
-          >
-            📍
-          </button>
-        </div>
+        <span className="text-xs text-parchment-200/50">{character.playerName}</span>
       </div>
       <p className="text-sm text-ember-400">
         {character.classAndLevel} · {character.race}
@@ -179,6 +170,12 @@ function CharacterSheet({ character, onOpenOnMap }: { character: Character; onOp
           </ul>
         )}
       </div>
+      <button
+        onClick={onOpenOnMap}
+        className="mt-4 w-full rounded-md border border-ink-700 py-1.5 text-xs text-parchment-200/60 hover:border-ember-500/50 hover:text-ember-400"
+      >
+        📍 Voir sur la carte
+      </button>
     </div>
   )
 }
