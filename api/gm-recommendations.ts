@@ -1,9 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
-import Anthropic from '@anthropic-ai/sdk'
+import { generateForcedFunctionCall } from './_lib/genai.js'
 import { recommendationsSchema, RECORD_RECOMMENDATIONS_TOOL, type Recommendations } from './_lib/recommendationsSchema.js'
-
-const CLAUDE_MODEL = 'claude-sonnet-5'
 
 const supabaseAdmin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -77,27 +75,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `Party:\n${party.map((c) => `- ${c.name}, ${c.class_and_level}, HP ${c.hp_current}/${c.hp_max}`).join('\n') || '(none yet)'}`,
     ].join('\n\n')
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-    const message = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 1536,
-      system:
+    const args = await generateForcedFunctionCall({
+      systemInstruction:
         'You advise a tabletop RPG GM between sessions. Read the campaign state given and produce concrete, ' +
         'specific recommendations — reference actual named NPCs/quests/locations, never generic advice like ' +
         '"introduce a twist". If a quest has stalled, say so and suggest a concrete complication. If an NPC ' +
         "hasn't appeared recently, suggest a specific reason for them to reappear.",
-      messages: [{ role: 'user', content: `Campaign state:\n\n${contextBlock}` }],
-      tools: [RECORD_RECOMMENDATIONS_TOOL],
-      tool_choice: { type: 'tool', name: 'record_recommendations' },
+      prompt: `Campaign state:\n\n${contextBlock}`,
+      functionDeclaration: RECORD_RECOMMENDATIONS_TOOL,
     })
 
-    const toolUse = message.content.find((block) => block.type === 'tool_use')
-    if (!toolUse || toolUse.type !== 'tool_use') {
-      throw new Error('Claude did not return recommendations.')
-    }
-
-    const result: Recommendations = recommendationsSchema.parse(toolUse.input)
+    const result: Recommendations = recommendationsSchema.parse(args)
     res.status(200).json(result)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error while generating recommendations.'

@@ -12,7 +12,7 @@ interface StructureNotesResponse {
 
 /**
  * Creates the raw note row, then calls the `/api/structure-gm-notes` Vercel
- * function, which authenticates the caller against Supabase, calls Claude to
+ * function, which authenticates the caller against Supabase, calls Gemini to
  * turn it into timeline events, NPC/location/quest upserts, and inventory
  * changes, and writes them back with the service-role key — all of it
  * picked up live by every screen subscribed to that campaign.

@@ -41,7 +41,7 @@ export function NotesPage() {
         'success',
       )
     },
-    onError: () => pushToast('Claude could not process that note — check the note history for details.', 'error'),
+    onError: () => pushToast('Gemini could not process that note — check the note history for details.', 'error'),
   })
 
   const recommendations = useMutation({
@@ -58,7 +58,7 @@ export function NotesPage() {
             <h2 className="mb-3 font-display text-xl text-parchment-100">Drop in what happened</h2>
             <p className="mb-4 text-sm text-parchment-200/60">
               Paste raw session notes, or a quick line like "Elyne a récupéré une dague +1 sur le
-              capitaine des bandits" — Claude structures it into the timeline, NPC codex, quest log,
+              capitaine des bandits" — Gemini structures it into the timeline, NPC codex, quest log,
               and party inventory automatically. This is temporary/working memory: nothing here is
               final until it lands in the chronicle.
             </p>
@@ -98,7 +98,7 @@ export function NotesPage() {
                 disabled={submit.isPending || !text.trim()}
                 className="self-start rounded-md bg-ember-500 px-4 py-2 text-sm font-medium text-ink-950 disabled:opacity-50"
               >
-                {submit.isPending ? 'Claude is reading…' : 'Process with Claude'}
+                {submit.isPending ? 'Gemini réfléchit…' : 'Traiter avec Gemini'}
               </button>
             </form>
           </>

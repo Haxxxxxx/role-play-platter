@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { Type, type FunctionDeclaration } from './genai.js'
 
 /**
  * Not a chat — a pushed batch of suggestions. The GM clicks one button and
@@ -24,30 +25,30 @@ export const recommendationsSchema = z.object({
 
 export type Recommendations = z.infer<typeof recommendationsSchema>
 
-export const RECORD_RECOMMENDATIONS_TOOL = {
+export const RECORD_RECOMMENDATIONS_TOOL: FunctionDeclaration = {
   name: 'record_recommendations',
   description:
     'Record 3-6 concrete, prioritized recommendations for the GM ahead of the next session, based only on ' +
     'the campaign state given in context. Favor specific, actionable suggestions over generic advice — ' +
     'reference actual NPCs, quests, and locations by name.',
-  input_schema: {
-    type: 'object' as const,
+  parameters: {
+    type: Type.OBJECT,
     properties: {
       recommendations: {
-        type: 'array',
+        type: Type.ARRAY,
         items: {
-          type: 'object',
+          type: Type.OBJECT,
           properties: {
             category: {
-              type: 'string',
+              type: Type.STRING,
               enum: ['quest', 'npc', 'pacing', 'worldbuilding', 'combat'],
               description:
                 'quest = advance/complicate an active quest, npc = bring back or develop a known NPC, ' +
                 'pacing = session-structure advice, worldbuilding = new detail/hook for the setting, ' +
                 'combat = an encounter idea.',
             },
-            title: { type: 'string', description: 'A short, scannable headline (< 10 words).' },
-            detail: { type: 'string', description: '1-3 sentences, specific and actionable.' },
+            title: { type: Type.STRING, description: 'A short, scannable headline (< 10 words).' },
+            detail: { type: Type.STRING, description: '1-3 sentences, specific and actionable.' },
           },
           required: ['category', 'title', 'detail'],
         },

@@ -1,12 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
-import Anthropic from '@anthropic-ai/sdk'
+import { generateForcedFunctionCall } from './_lib/genai.js'
 import { campaignUpdateSchema, RECORD_CAMPAIGN_UPDATE_TOOL, type CampaignUpdate } from './_lib/schema.js'
 import { applyCampaignUpdate } from './_lib/writeback.js'
-
-// Text-only structuring/narration model. Anthropic has no image-gen endpoint —
-// NPC portraits will need a separate provider wired in later.
-const CLAUDE_MODEL = 'claude-sonnet-5'
 
 // Service-role client: bypasses Row Level Security. This key must only ever
 // live in Vercel's server-side environment variables — never VITE_-prefixed,
@@ -14,7 +10,7 @@ const CLAUDE_MODEL = 'claude-sonnet-5'
 const supabaseAdmin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 /**
- * The heart of the AI pipeline: takes a raw GM/player note, gives Claude the
+ * The heart of the AI pipeline: takes a raw GM/player note, gives Gemini the
  * campaign's existing NPCs/locations/quests/party for continuity, forces a
  * structured tool call back, validates it, and writes the result into
  * Postgres. Every screen watching that campaign (chronicle, party, notes
@@ -103,32 +99,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `Ongoing quests: ${existingQuests.map((q) => `${q.title} [${q.status}]`).join(', ') || '(none yet)'}`,
     ].join('\n')
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-    const message = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 2048,
-      system:
+    const args = await generateForcedFunctionCall({
+      systemInstruction:
         'You are the archivist for a tabletop RPG campaign. When the note refers to something already ' +
         'known (case-insensitive name match), reuse that exact name instead of creating a near-duplicate ' +
         'entry. Only record item changes for characters already in the party roster given in context — ' +
         'never invent a new party member from a note.',
-      messages: [
-        {
-          role: 'user',
-          content: `Campaign context:\n${contextBlock}\n\nSession note (kind: ${note.kind}):\n${note.raw_text}`,
-        },
-      ],
-      tools: [RECORD_CAMPAIGN_UPDATE_TOOL],
-      tool_choice: { type: 'tool', name: 'record_campaign_update' },
+      prompt: `Campaign context:\n${contextBlock}\n\nSession note (kind: ${note.kind}):\n${note.raw_text}`,
+      functionDeclaration: RECORD_CAMPAIGN_UPDATE_TOOL,
     })
 
-    const toolUse = message.content.find((block) => block.type === 'tool_use')
-    if (!toolUse || toolUse.type !== 'tool_use') {
-      throw new Error('Claude did not return a structured update.')
-    }
-
-    const update: CampaignUpdate = campaignUpdateSchema.parse(toolUse.input)
+    const update: CampaignUpdate = campaignUpdateSchema.parse(args)
 
     const result = await applyCampaignUpdate({
       supabase: supabaseAdmin,

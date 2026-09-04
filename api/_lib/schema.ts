@@ -1,7 +1,8 @@
 import { z } from 'zod'
+import { Type, type FunctionDeclaration } from './genai.js'
 
 /**
- * Shape Claude must fill via forced tool_use. Validated with zod before we
+ * Shape Gemini must fill via a forced function call. Validated with zod before we
  * trust any of it — model output is untrusted input just like a client
  * request, so it gets the same structural validation before touching the
  * database.
@@ -64,75 +65,75 @@ export const campaignUpdateSchema = z.object({
 
 export type CampaignUpdate = z.infer<typeof campaignUpdateSchema>
 
-export const RECORD_CAMPAIGN_UPDATE_TOOL = {
+export const RECORD_CAMPAIGN_UPDATE_TOOL: FunctionDeclaration = {
   name: 'record_campaign_update',
   description:
     'Record everything from this session note into the campaign chronicle: a short narrative recap, ' +
     'new/ongoing timeline events, NPCs encountered, locations discovered, quest progress, and any ' +
     'inventory changes for named party members. Only include entities actually mentioned in the note.',
-  input_schema: {
-    type: 'object' as const,
+  parameters: {
+    type: Type.OBJECT,
     properties: {
       narrativeRecap: {
-        type: 'string',
+        type: Type.STRING,
         description: 'A short (2-4 sentence) narrated recap of this note, in an evocative campaign-log voice.',
       },
       timelineEvents: {
-        type: 'array',
+        type: Type.ARRAY,
         items: {
-          type: 'object',
+          type: Type.OBJECT,
           properties: {
-            title: { type: 'string' },
-            description: { type: 'string' },
-            tags: { type: 'array', items: { type: 'string' } },
-            locationName: { type: ['string', 'null'] },
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            locationName: { type: Type.STRING, nullable: true },
           },
           required: ['title', 'description'],
         },
       },
       npcs: {
-        type: 'array',
+        type: Type.ARRAY,
         items: {
-          type: 'object',
+          type: Type.OBJECT,
           properties: {
-            name: { type: 'string' },
-            description: { type: 'string' },
-            disposition: { type: 'string', enum: ['ally', 'neutral', 'enemy', 'unknown'] },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            disposition: { type: Type.STRING, enum: ['ally', 'neutral', 'enemy', 'unknown'] },
           },
           required: ['name', 'description'],
         },
       },
       locations: {
-        type: 'array',
+        type: Type.ARRAY,
         items: {
-          type: 'object',
-          properties: { name: { type: 'string' }, description: { type: 'string' } },
+          type: Type.OBJECT,
+          properties: { name: { type: Type.STRING }, description: { type: Type.STRING } },
           required: ['name', 'description'],
         },
       },
       quests: {
-        type: 'array',
+        type: Type.ARRAY,
         items: {
-          type: 'object',
+          type: Type.OBJECT,
           properties: {
-            title: { type: 'string' },
-            description: { type: 'string' },
-            status: { type: 'string', enum: ['active', 'completed', 'failed'] },
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            status: { type: Type.STRING, enum: ['active', 'completed', 'failed'] },
           },
           required: ['title', 'description'],
         },
       },
       itemChanges: {
-        type: 'array',
+        type: Type.ARRAY,
         description: 'Only for characters that already exist in the party roster given in context.',
         items: {
-          type: 'object',
+          type: Type.OBJECT,
           properties: {
-            characterName: { type: 'string' },
-            itemName: { type: 'string' },
-            quantityDelta: { type: 'number', description: 'Positive to add, negative to remove.' },
-            action: { type: 'string', enum: ['add', 'remove', 'equip', 'unequip'] },
-            description: { type: ['string', 'null'] },
+            characterName: { type: Type.STRING },
+            itemName: { type: Type.STRING },
+            quantityDelta: { type: Type.NUMBER, description: 'Positive to add, negative to remove.' },
+            action: { type: Type.STRING, enum: ['add', 'remove', 'equip', 'unequip'] },
+            description: { type: Type.STRING, nullable: true },
           },
           required: ['characterName', 'itemName', 'quantityDelta', 'action'],
         },

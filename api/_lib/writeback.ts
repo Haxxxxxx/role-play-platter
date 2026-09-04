@@ -39,7 +39,7 @@ export interface ApplyUpdateResult {
 }
 
 /**
- * Writes Claude's (already zod-validated) structured update into Postgres:
+ * Writes Gemini's (already zod-validated) structured update into Postgres:
  * upserts NPCs/locations/quests by case-insensitive name match against what
  * the campaign already knows, inserts timeline events, and applies
  * inventory deltas to matching party members. Runs with the service-role
