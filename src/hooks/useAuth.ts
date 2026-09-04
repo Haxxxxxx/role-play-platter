@@ -7,40 +7,12 @@ interface AuthState {
   loading: boolean
 }
 
-// Module-level, not component-level: memoizes the in-flight/completed
-// anonymous sign-in across every useAuth() call in this page load, so React
-// StrictMode's dev-only double-invoke of the effect (mount -> cleanup ->
-// mount again) can't fire signInAnonymously() twice and spawn two throwaway
-// accounts — every caller awaits the same promise instead of starting a
-// fresh sign-in.
-let sessionPromise: Promise<User | null> | null = null
-
-function ensureSession(): Promise<User | null> {
-  if (!sessionPromise) {
-    sessionPromise = (async () => {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) return data.session.user
-      const { data: anon, error } = await supabase.auth.signInAnonymously()
-      if (error) {
-        console.error('Anonymous sign-in failed — enable "Anonymous sign-ins" in Supabase Auth settings.', error)
-        sessionPromise = null // allow a retry on the next mount
-        return null
-      }
-      return anon.user
-    })()
-  }
-  return sessionPromise
-}
-
 /**
- * Dev-phase auth: no login screen yet — this is inside-only use until real
- * accounts matter (friends joining parties). Signs in anonymously so
- * `auth.uid()` still exists and Row Level Security keeps working exactly as
- * written; the session persists in the browser (localStorage) across
- * reloads, so campaigns created now stay owned by the same anonymous user.
- * Swap this for `signInWithGoogle` + a real login screen when it's time —
- * Supabase can upgrade an anonymous session to a real one in place
- * (`supabase.auth.updateUser` / `linkIdentity`), no data migration needed.
+ * No more auto-anonymous sign-in — that was fine for solo dev use, but real
+ * multi-user play needs an actual account so a friend joining a campaign is
+ * still them next time they open the app. LoginPage now offers a real
+ * choice: sign in with Google, or continue as a guest (anonymous) — either
+ * way `session_notes`/`campaign_members` RLS treats auth.uid() the same.
  */
 export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>({ user: null, loading: true })
@@ -48,8 +20,8 @@ export function useAuth(): AuthState {
   useEffect(() => {
     let cancelled = false
 
-    ensureSession().then((user) => {
-      if (!cancelled) setState({ user, loading: false })
+    supabase.auth.getSession().then(({ data }) => {
+      if (!cancelled) setState({ user: data.session?.user ?? null, loading: false })
     })
 
     const {
@@ -67,8 +39,27 @@ export function useAuth(): AuthState {
   return state
 }
 
+export async function continueAsGuest(): Promise<void> {
+  const { error } = await supabase.auth.signInAnonymously()
+  if (error) throw error
+}
+
 export async function signInWithGoogle(): Promise<void> {
   const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
+  })
+  if (error) throw error
+}
+
+/**
+ * Upgrades the *current* anonymous session to a real Google account in
+ * place — same auth.uid(), so any campaign this guest already GMs or plays
+ * in stays theirs. A fresh signInWithGoogle() would instead create a brand
+ * new user and orphan all of that.
+ */
+export async function linkGoogleAccount(): Promise<void> {
+  const { error } = await supabase.auth.linkIdentity({
     provider: 'google',
     options: { redirectTo: window.location.origin },
   })

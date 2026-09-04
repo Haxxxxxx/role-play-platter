@@ -24,6 +24,15 @@ interface MapNavState {
   centerTokenId?: string
 }
 
+// Chebyshev distance, in grid cells, within which a player's character is
+// considered "at" a location pin — generous enough that an approximately-
+// placed token still counts, not so generous that it's teleporting.
+const TRAVEL_RANGE = 2
+
+function chebyshevDistance(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+}
+
 export function MapPage() {
   const { campaign } = useOutletContext<{ campaign: Campaign }>()
   const { campaignId } = useParams<{ campaignId: string }>()
@@ -50,11 +59,22 @@ export function MapPage() {
   const [pathFromId, setPathFromId] = useState<string | null>(null)
 
   const myCharacterIds = new Set(party.filter((c) => c.ownerId === user?.id).map((c) => c.id))
+  const myTokens = tokens.filter((t) => t.refCharacterId != null && myCharacterIds.has(t.refCharacterId))
 
   function canDrag(token: MapToken): boolean {
     if (pathMode) return false
     return isGm || (token.refCharacterId != null && myCharacterIds.has(token.refCharacterId))
   }
+
+  function isReachableForPlayer(locationToken: MapToken): boolean {
+    return myTokens.some((mt) => chebyshevDistance(mt, locationToken) <= TRAVEL_RANGE)
+  }
+
+  const unreachableLocationIds = new Set(
+    !isGm
+      ? tokens.filter((t) => t.kind === 'location' && !isReachableForPlayer(t)).map((t) => t.id)
+      : [],
+  )
 
   async function handleDrop(token: MapToken, x: number, y: number) {
     if (!map) return
@@ -82,7 +102,13 @@ export function MapPage() {
     }
     // A location pin is the whole point of "click a step of the campaign" —
     // zoom straight into its own detail map instead of just selecting it.
+    // The GM can jump anywhere; a player has to actually have travelled
+    // their character near it first — no teleporting across the map.
     if (token.kind === 'location' && token.refLocationId) {
+      if (!isGm && !isReachableForPlayer(token)) {
+        pushToast('Approchez votre personnage de ce lieu pour vous y rendre.', 'info')
+        return
+      }
       navigate(`/campaign/${campaignId}/map/${token.refLocationId}`)
       return
     }
@@ -179,6 +205,12 @@ export function MapPage() {
         </p>
       )}
 
+      {!isGm && myTokens.length > 0 && (
+        <p className="mb-3 text-xs text-parchment-200/50">
+          Déplacez votre pion près d'un lieu pour vous y rendre — les lieux hors de portée sont estompés.
+        </p>
+      )}
+
       <MapGrid
         mapId={map.id}
         terrainText={`${campaign.description} ${locations.map((l) => `${l.name} ${l.description}`).join(' ')}`}
@@ -189,6 +221,7 @@ export function MapPage() {
         edges={edges}
         selectedTokenId={pathMode ? pathFromId : selectedTokenId}
         centerTokenId={centerTokenId}
+        mutedTokenIds={unreachableLocationIds}
         onActivate={handleActivate}
         onDeselect={() => setSelectedTokenId(null)}
         canDrag={canDrag}

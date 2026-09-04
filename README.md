@@ -35,7 +35,9 @@ thing that writes with the Supabase **service-role** key. It:
 
 1. **Create a Supabase project** at [database.new](https://database.new) (or your org: `app.supabase.com/org/<your-org>`).
 2. **Run the schema**: Supabase dashboard → SQL Editor → paste the contents of `supabase/migrations/0001_init.sql` → Run. (Or `supabase db push` if you use the Supabase CLI.)
-3. **Enable Google sign-in**: Authentication → Providers → Google. You'll need a Google Cloud OAuth client (console.cloud.google.com → APIs & Services → Credentials) with the Supabase callback URL added as an authorized redirect URI (Supabase shows you the exact URL on that page).
+3. **Auth**: Authentication → Sign In / Providers →
+   - **Google**: needs a Google Cloud OAuth client (console.cloud.google.com → APIs & Services → Credentials) with the Supabase callback URL added as an authorized redirect URI (Supabase shows you the exact URL on that page).
+   - **Anonymous**: enable this too — it powers "Continue as a guest" on the login screen, for players who don't want to make an account just to join one session.
 4. **Env vars**: `cp .env.example .env.local` and fill in:
    - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — Project Settings → API (public, safe in the client bundle)
    - `SUPABASE_URL` (same URL), `SUPABASE_SERVICE_ROLE_KEY` — Project Settings → API (**secret** — server only)
@@ -52,10 +54,13 @@ thing that writes with the Supabase **service-role** key. It:
 
 ## What's built (v1 foundation)
 
-- Google auth (Supabase), campaign creation, membership-scoped Row Level Security
+- **Auth**: Google sign-in or guest (anonymous), with a one-click upgrade from guest to a real Google account that keeps the same campaigns (`linkIdentity`, not a fresh sign-in — a fresh sign-in would create a new user and orphan anything the guest owned)
+- **Invites**: a campaign's GM copies a join link (`/campaign/:id/join`); any signed-in user (guest or real) who opens it self-enrolls as a player via a scoped RLS policy — the unguessable campaign id is the invite token
+- **GM/player permissions**: GM Notes (the AI pipeline) is GM-only end to end (hidden tab + RLS); characters can be edited by their owner or the GM, not any member; the world map lets the GM place/move/hide anything, a player can only drag their own character's token, and can only "enter" a location's detail map once their character has actually travelled near its pin (Chebyshev distance, tunable) — no teleporting across the map
 - **GM Notes pipeline**: raw text in → Claude structures it → timeline events, NPC codex entries, quest log entries, and party inventory changes, all written back and live everywhere
 - **Party roster**: character sheets (stats, HP, AC, inventory) — inventory updates automatically from notes, or by hand
 - **Chronicle view**: real-time timeline + NPC codex + quest log
+- **Battle map**: a scrollable overworld path (location pins connected by an editable route) plus one tactical detail map per location, with decorative water/sand/dirt/forest/rock terrain generated from the location's own description text
 
 ## Roadmap (not built yet)
 

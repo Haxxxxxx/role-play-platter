@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth, linkGoogleAccount, signOutUser } from '@/hooks/useAuth'
 import { useCampaigns, createCampaign } from '@/hooks/useCampaigns'
-import type { RpgSystem } from '@/types/database'
+import type { Campaign, RpgSystem } from '@/types/database'
 import { useUiStore } from '@/store/useUiStore'
 
 const SYSTEMS: RpgSystem[] = [
@@ -35,13 +35,47 @@ export function DashboardPage() {
     onError: () => pushToast('Could not create campaign.', 'error'),
   })
 
+  async function handleLinkGoogle() {
+    try {
+      await linkGoogleAccount()
+    } catch {
+      pushToast('Could not link a Google account — try again.', 'error')
+    }
+  }
+
+  function copyInviteLink(campaignId: string) {
+    const url = `${window.location.origin}/campaign/${campaignId}/join`
+    navigator.clipboard
+      .writeText(url)
+      .then(() => pushToast("Lien d'invitation copié.", 'success'))
+      .catch(() => pushToast('Impossible de copier le lien.', 'error'))
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <header className="mb-8">
+      <header className="mb-6 flex items-center justify-between">
         <h1 className="font-display text-3xl text-parchment-100">Your Campaigns</h1>
-        {/* Dev-phase: no accounts yet, so no user identity to show or sign
-            out of — see useAuth. Comes back once real login lands. */}
+        <button
+          onClick={() => signOutUser()}
+          className="rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800"
+        >
+          Sign out
+        </button>
       </header>
+
+      {user?.is_anonymous && (
+        <div className="mb-8 flex items-center justify-between gap-4 rounded-lg border border-arcane-500/40 bg-arcane-500/10 px-4 py-3 text-sm">
+          <span className="text-parchment-200/80">
+            You're playing as a guest — link a Google account so you don't lose access to your campaigns.
+          </span>
+          <button
+            onClick={handleLinkGoogle}
+            className="shrink-0 rounded-md bg-arcane-500 px-3 py-1.5 text-xs font-medium text-ink-950 hover:opacity-90"
+          >
+            Link Google account
+          </button>
+        </div>
+      )}
 
       <section className="mb-10 rounded-xl border border-ink-700 bg-ink-900 p-5">
         <h2 className="mb-3 font-display text-lg text-parchment-100">Start a new campaign</h2>
@@ -95,18 +129,40 @@ export function DashboardPage() {
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           {campaigns.map((c) => (
-            <Link
-              key={c.id}
-              to={`/campaign/${c.id}`}
-              className="rounded-xl border border-ink-700 bg-ink-900 p-4 transition hover:border-ember-500/50"
-            >
-              <h3 className="font-display text-lg text-parchment-100">{c.name}</h3>
-              <p className="text-xs uppercase tracking-wide text-ember-400">{c.system}</p>
-              {c.description && <p className="mt-2 text-sm text-parchment-200/70">{c.description}</p>}
-            </Link>
+            <CampaignCard key={c.id} campaign={c} isGm={c.gmId === user?.id} onCopyInvite={() => copyInviteLink(c.id)} />
           ))}
         </div>
       </section>
+    </div>
+  )
+}
+
+function CampaignCard({ campaign, isGm, onCopyInvite }: { campaign: Campaign; isGm: boolean; onCopyInvite: () => void }) {
+  return (
+    <div className="rounded-xl border border-ink-700 bg-ink-900 p-4 transition hover:border-ember-500/50">
+      <Link to={`/campaign/${campaign.id}`} className="block">
+        <div className="flex items-center gap-2">
+          <h3 className="font-display text-lg text-parchment-100">{campaign.name}</h3>
+          {isGm && (
+            <span className="rounded-full border border-ember-500/40 px-1.5 py-0.5 text-[10px] uppercase text-ember-400">
+              MJ
+            </span>
+          )}
+        </div>
+        <p className="text-xs uppercase tracking-wide text-ember-400">{campaign.system}</p>
+        {campaign.description && <p className="mt-2 text-sm text-parchment-200/70">{campaign.description}</p>}
+      </Link>
+      {isGm && (
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            onCopyInvite()
+          }}
+          className="mt-3 text-xs text-parchment-200/50 hover:text-ember-400"
+        >
+          🔗 Copier le lien d'invitation
+        </button>
+      )}
     </div>
   )
 }

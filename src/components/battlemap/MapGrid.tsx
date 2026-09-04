@@ -15,6 +15,7 @@ export function MapGrid({
   edges,
   selectedTokenId,
   centerTokenId,
+  mutedTokenIds,
   onActivate,
   onDeselect,
   canDrag,
@@ -39,6 +40,9 @@ export function MapGrid({
   /** Scrolls this token into view (once) when the grid first has it — how a
    * click from another panel ("open the map centered on this") lands. */
   centerTokenId?: string | null
+  /** Dims these tokens (e.g. location pins a player's character hasn't
+   * travelled near yet) — still clickable, just visually deprioritized. */
+  mutedTokenIds?: Set<string>
   onActivate: (token: MapToken) => void
   onDeselect: () => void
   canDrag: (token: MapToken) => boolean
@@ -132,6 +136,7 @@ export function MapGrid({
             key={token.id}
             token={token}
             selected={token.id === selectedTokenId}
+            muted={mutedTokenIds?.has(token.id) ?? false}
             draggable={canDrag(token)}
             onActivate={() => onActivate(token)}
             onDrop={(x, y) => onDrop(token, x, y)}
@@ -145,12 +150,14 @@ export function MapGrid({
 function TokenView({
   token,
   selected,
+  muted,
   draggable,
   onActivate,
   onDrop,
 }: {
   token: MapToken
   selected: boolean
+  muted: boolean
   draggable: boolean
   onActivate: () => void
   onDrop: (x: number, y: number) => void
@@ -203,7 +210,7 @@ function TokenView({
         draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
       } ${selected ? 'border-ember-400 ring-2 ring-ember-400/60' : 'border-ink-950/60'} ${
         !token.visibleToPlayers ? 'opacity-60 [border-style:dashed]' : ''
-      }`}
+      } ${muted ? 'opacity-35' : ''}`}
       style={{
         left,
         top,
