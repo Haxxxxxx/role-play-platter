@@ -10,6 +10,7 @@ import { PartyPage } from '@/pages/PartyPage'
 import { MapPage } from '@/pages/MapPage'
 import { LocationMapPage } from '@/pages/LocationMapPage'
 import { JoinCampaignPage } from '@/pages/JoinCampaignPage'
+import { ProfilePage } from '@/pages/ProfilePage'
 import { SetupNoticePage } from '@/pages/SetupNoticePage'
 import { Toaster } from '@/components/Toaster'
 
@@ -32,6 +33,7 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/campaign/:campaignId/join" element={<JoinCampaignPage />} />
         <Route path="/campaign/:campaignId" element={<CampaignLayout />}>
           <Route index element={<ChroniclePage />} />
