@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { createCharacter, useParty } from '@/hooks/useParty'
+import { findTokenLocation } from '@/hooks/useBattleMap'
 import { useUiStore } from '@/store/useUiStore'
 import type { Character } from '@/types/database'
 
@@ -11,6 +12,19 @@ export function PartyPage() {
   const { user } = useAuth()
   const { data: party, loading } = useParty(campaignId)
   const [showForm, setShowForm] = useState(false)
+  const navigate = useNavigate()
+  const pushToast = useUiStore((s) => s.pushToast)
+
+  async function openOnMap(character: Character) {
+    if (!campaignId) return
+    const match = await findTokenLocation({ campaignId, refCharacterId: character.id })
+    if (!match) {
+      pushToast(`${character.name} n'est pas encore placé sur la carte.`, 'info')
+      return
+    }
+    const path = match.locationId ? `/campaign/${campaignId}/map/${match.locationId}` : `/campaign/${campaignId}/map`
+    navigate(path, { state: { centerTokenId: match.tokenId } })
+  }
 
   return (
     <div>
@@ -39,7 +53,7 @@ export function PartyPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {party.map((character) => (
-          <CharacterSheet key={character.id} character={character} />
+          <CharacterSheet key={character.id} character={character} onOpenOnMap={() => openOnMap(character)} />
         ))}
       </div>
     </div>
@@ -113,12 +127,21 @@ function NewCharacterForm({
   )
 }
 
-function CharacterSheet({ character }: { character: Character }) {
+function CharacterSheet({ character, onOpenOnMap }: { character: Character; onOpenOnMap: () => void }) {
   return (
     <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
       <div className="flex items-baseline justify-between">
         <h3 className="font-display text-lg text-parchment-100">{character.name}</h3>
-        <span className="text-xs text-parchment-200/50">{character.playerName}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-parchment-200/50">{character.playerName}</span>
+          <button
+            onClick={onOpenOnMap}
+            title="Voir sur la carte"
+            className="rounded-md border border-ink-700 px-1.5 py-0.5 text-xs text-parchment-200/60 hover:border-ember-500/50 hover:text-ember-400"
+          >
+            📍
+          </button>
+        </div>
       </div>
       <p className="text-sm text-ember-400">
         {character.classAndLevel} · {character.race}

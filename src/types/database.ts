@@ -114,6 +114,8 @@ export interface Quest extends BaseRow {
 
 export interface BattleMap extends BaseRow {
   campaignId: string
+  /** null = the campaign's overworld/path map; set = one location's detail map. */
+  locationId: string | null
   name: string
   gridWidth: number
   gridHeight: number

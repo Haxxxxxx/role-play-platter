@@ -11,18 +11,28 @@ import {
 import { useSupabaseCollection } from '@/hooks/useSupabaseCollection'
 import type { BattleMap, MapEdge, MapToken, MapTokenKind } from '@/types/database'
 
-// Sized to hold the whole campaign's path (several locations spread out), not
-// just one room — the grid container scrolls (see MapPage), so this is a
-// canvas to lay a journey across, not a single battle's footprint.
-const DEFAULT_GRID_WIDTH = 40
-const DEFAULT_GRID_HEIGHT = 28
+// The overworld holds the whole campaign's path (several locations spread
+// out) — the grid scrolls (see MapGrid), so it's a canvas for a journey, not
+// one room. A location's own detail map is tactical-room scale instead.
+const OVERWORLD_GRID = { width: 40, height: 28 }
+const LOCATION_GRID = { width: 20, height: 14 }
 
 /**
- * A campaign has (for now) a single map, created lazily by the GM the first
- * time they open the tab — RLS only lets the GM insert into battle_maps, so
- * a player visiting first just sees "waiting on the GM" instead of an error.
+ * Gets or lazily creates the one battle_maps row for either the campaign's
+ * overworld (locationId null) or one specific location's detail map
+ * (locationId set) — same shape, same lazy-create-by-GM behavior either way.
+ * RLS only lets the GM insert into battle_maps, so a player visiting first
+ * just sees "waiting on the GM" instead of an error.
  */
-export function useBattleMap(campaignId: string | undefined, isGm: boolean) {
+function useMapFor(params: {
+  campaignId: string | undefined
+  locationId: string | null
+  isGm: boolean
+  name: string
+  gridWidth: number
+  gridHeight: number
+}) {
+  const { campaignId, locationId, isGm, name, gridWidth, gridHeight } = params
   const [map, setMap] = useState<BattleMap | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -39,13 +49,9 @@ export function useBattleMap(campaignId: string | undefined, isGm: boolean) {
     setLoading(true)
 
     async function load() {
-      const { data: existing } = await supabase
-        .from('battle_maps')
-        .select('*')
-        .eq('campaign_id', campaignId as string)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle()
+      let query = supabase.from('battle_maps').select('*').eq('campaign_id', campaignId as string)
+      query = locationId ? query.eq('location_id', locationId) : query.is('location_id', null)
+      const { data: existing } = await query.order('created_at', { ascending: true }).limit(1).maybeSingle()
 
       if (cancelled) return
 
@@ -65,9 +71,10 @@ export function useBattleMap(campaignId: string | undefined, isGm: boolean) {
         .from('battle_maps')
         .insert({
           campaign_id: campaignId,
-          name: 'Carte principale',
-          grid_width: DEFAULT_GRID_WIDTH,
-          grid_height: DEFAULT_GRID_HEIGHT,
+          location_id: locationId,
+          name,
+          grid_width: gridWidth,
+          grid_height: gridHeight,
         })
         .select('*')
         .single()
@@ -80,7 +87,7 @@ export function useBattleMap(campaignId: string | undefined, isGm: boolean) {
     load()
 
     const channel = supabase
-      .channel(`battle_maps:${campaignId}`)
+      .channel(`battle_maps:${campaignId}:${locationId ?? 'overworld'}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'battle_maps', filter: `campaign_id=eq.${campaignId}` },
@@ -92,9 +99,40 @@ export function useBattleMap(campaignId: string | undefined, isGm: boolean) {
       cancelled = true
       supabase.removeChannel(channel)
     }
-  }, [campaignId, isGm])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId, locationId, isGm])
 
   return { map, loading }
+}
+
+export function useBattleMap(campaignId: string | undefined, isGm: boolean) {
+  return useMapFor({
+    campaignId,
+    locationId: null,
+    isGm,
+    name: 'Carte du monde',
+    gridWidth: OVERWORLD_GRID.width,
+    gridHeight: OVERWORLD_GRID.height,
+  })
+}
+
+export function useLocationMap(
+  campaignId: string | undefined,
+  locationId: string | undefined,
+  locationName: string,
+  isGm: boolean,
+) {
+  return useMapFor({
+    // Piggyback on useMapFor's "no campaignId -> disabled" guard until the
+    // route param is actually available, so this never briefly queries the
+    // overworld map (locationId: null) instead.
+    campaignId: locationId ? campaignId : undefined,
+    locationId: locationId ?? null,
+    isGm,
+    name: locationName,
+    gridWidth: LOCATION_GRID.width,
+    gridHeight: LOCATION_GRID.height,
+  })
 }
 
 export function useMapTokens(mapId: string | undefined) {
@@ -196,4 +234,33 @@ export async function createEdge(params: {
     to_token_id: params.toTokenId,
   })
   if (error) throw error
+}
+
+export interface TokenLocationResult {
+  tokenId: string
+  /** null -> the token lives on the overworld map. */
+  locationId: string | null
+}
+
+/**
+ * Finds where on the map (which map, and which token) an NPC or character
+ * actually is, so other panels (chronicle, party) can jump straight there —
+ * "open the map centered on the thing I just clicked" needs to know which
+ * of potentially many maps (overworld + every location) actually has a pin
+ * for it. Returns null if nothing has been placed for it yet.
+ */
+export async function findTokenLocation(
+  params: { campaignId: string } & ({ refNpcId: string } | { refCharacterId: string }),
+): Promise<TokenLocationResult | null> {
+  let query = supabase
+    .from('map_tokens')
+    .select('id, battle_maps!inner(location_id)')
+    .eq('campaign_id', params.campaignId)
+    .limit(1)
+  query = 'refNpcId' in params ? query.eq('ref_npc_id', params.refNpcId) : query.eq('ref_character_id', params.refCharacterId)
+
+  const { data } = await query.maybeSingle()
+  if (!data) return null
+  const row = data as unknown as { id: string; battle_maps: { location_id: string | null } }
+  return { tokenId: row.id, locationId: row.battle_maps.location_id }
 }

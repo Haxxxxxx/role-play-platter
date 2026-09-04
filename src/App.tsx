@@ -7,6 +7,7 @@ import { ChroniclePage } from '@/pages/ChroniclePage'
 import { NotesPage } from '@/pages/NotesPage'
 import { PartyPage } from '@/pages/PartyPage'
 import { MapPage } from '@/pages/MapPage'
+import { LocationMapPage } from '@/pages/LocationMapPage'
 import { SetupNoticePage } from '@/pages/SetupNoticePage'
 import { Toaster } from '@/components/Toaster'
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="notes" element={<NotesPage />} />
           <Route path="party" element={<PartyPage />} />
           <Route path="map" element={<MapPage />} />
+          <Route path="map/:locationId" element={<LocationMapPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

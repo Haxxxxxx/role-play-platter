@@ -217,6 +217,7 @@ export function mapQuest(row: QuestRow): Quest {
 export interface BattleMapRow {
   id: string
   campaign_id: string
+  location_id: string | null
   name: string
   grid_width: number
   grid_height: number
@@ -229,6 +230,7 @@ export function mapBattleMap(row: BattleMapRow): BattleMap {
   return {
     id: row.id,
     campaignId: row.campaign_id,
+    locationId: row.location_id,
     name: row.name,
     gridWidth: row.grid_width,
     gridHeight: row.grid_height,
