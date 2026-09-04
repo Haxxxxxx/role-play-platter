@@ -1,11 +1,21 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { mapBattleMap, mapMapToken, type BattleMapRow, type MapTokenRow } from '@/lib/mappers'
+import {
+  mapBattleMap,
+  mapMapEdge,
+  mapMapToken,
+  type BattleMapRow,
+  type MapEdgeRow,
+  type MapTokenRow,
+} from '@/lib/mappers'
 import { useSupabaseCollection } from '@/hooks/useSupabaseCollection'
-import type { BattleMap, MapToken, MapTokenKind } from '@/types/database'
+import type { BattleMap, MapEdge, MapToken, MapTokenKind } from '@/types/database'
 
-const DEFAULT_GRID_WIDTH = 16
-const DEFAULT_GRID_HEIGHT = 12
+// Sized to hold the whole campaign's path (several locations spread out), not
+// just one room — the grid container scrolls (see MapPage), so this is a
+// canvas to lay a journey across, not a single battle's footprint.
+const DEFAULT_GRID_WIDTH = 40
+const DEFAULT_GRID_HEIGHT = 28
 
 /**
  * A campaign has (for now) a single map, created lazily by the GM the first
@@ -108,20 +118,27 @@ export async function createToken(params: {
   y: number
   refNpcId?: string | null
   refCharacterId?: string | null
-}): Promise<void> {
-  const { error } = await supabase.from('map_tokens').insert({
-    campaign_id: params.campaignId,
-    map_id: params.mapId,
-    kind: params.kind,
-    label: params.label,
-    icon: params.icon,
-    color: params.color,
-    x: params.x,
-    y: params.y,
-    ref_npc_id: params.refNpcId ?? null,
-    ref_character_id: params.refCharacterId ?? null,
-  })
+  refLocationId?: string | null
+}): Promise<string> {
+  const { data, error } = await supabase
+    .from('map_tokens')
+    .insert({
+      campaign_id: params.campaignId,
+      map_id: params.mapId,
+      kind: params.kind,
+      label: params.label,
+      icon: params.icon,
+      color: params.color,
+      x: params.x,
+      y: params.y,
+      ref_npc_id: params.refNpcId ?? null,
+      ref_character_id: params.refCharacterId ?? null,
+      ref_location_id: params.refLocationId ?? null,
+    })
+    .select('id')
+    .single()
   if (error) throw error
+  return (data as { id: string }).id
 }
 
 export async function moveToken(tokenId: string, x: number, y: number): Promise<void> {
@@ -136,5 +153,47 @@ export async function deleteToken(tokenId: string): Promise<void> {
 
 export async function setTokenVisibility(tokenId: string, visibleToPlayers: boolean): Promise<void> {
   const { error } = await supabase.from('map_tokens').update({ visible_to_players: visibleToPlayers }).eq('id', tokenId)
+  if (error) throw error
+}
+
+export function useMapEdges(mapId: string | undefined) {
+  return useSupabaseCollection<MapEdgeRow, MapEdge>({
+    table: 'map_edges',
+    filterColumn: 'map_id',
+    filterValue: mapId,
+    mapRow: mapMapEdge,
+  })
+}
+
+export async function createEdge(params: {
+  campaignId: string
+  mapId: string
+  fromTokenId: string
+  toTokenId: string
+}): Promise<void> {
+  if (params.fromTokenId === params.toTokenId) return
+  // Undirected in practice — store one row per pair regardless of click
+  // order, so re-connecting the same two tokens toggles the edge off.
+  const { data: existing } = await supabase
+    .from('map_edges')
+    .select('id')
+    .eq('map_id', params.mapId)
+    .or(
+      `and(from_token_id.eq.${params.fromTokenId},to_token_id.eq.${params.toTokenId}),` +
+        `and(from_token_id.eq.${params.toTokenId},to_token_id.eq.${params.fromTokenId})`,
+    )
+    .maybeSingle()
+
+  if (existing) {
+    await supabase.from('map_edges').delete().eq('id', existing.id)
+    return
+  }
+
+  const { error } = await supabase.from('map_edges').insert({
+    campaign_id: params.campaignId,
+    map_id: params.mapId,
+    from_token_id: params.fromTokenId,
+    to_token_id: params.toTokenId,
+  })
   if (error) throw error
 }

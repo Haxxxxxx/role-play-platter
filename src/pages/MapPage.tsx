@@ -1,13 +1,23 @@
 import { useRef, useState } from 'react'
 import { useOutletContext, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useNpcs } from '@/hooks/useChronicle'
+import { useLocations, useNpcs } from '@/hooks/useChronicle'
 import { useParty } from '@/hooks/useParty'
-import { createToken, deleteToken, moveToken, setTokenVisibility, useBattleMap, useMapTokens } from '@/hooks/useBattleMap'
+import {
+  createEdge,
+  createToken,
+  deleteToken,
+  moveToken,
+  setTokenVisibility,
+  useBattleMap,
+  useMapEdges,
+  useMapTokens,
+} from '@/hooks/useBattleMap'
 import { useUiStore } from '@/store/useUiStore'
-import type { Campaign, MapToken, Npc, NpcDisposition } from '@/types/database'
+import type { Campaign, Location, MapEdge, MapToken, Npc, NpcDisposition } from '@/types/database'
 
 const CELL_SIZE = 36
+const LOCATION_STYLE = { icon: '📍', color: '#d97757' }
 
 const DECORATION_PRESETS: { label: string; icon: string; color: string }[] = [
   { label: 'Arbre', icon: '🌲', color: '#2f6b3a' },
@@ -35,16 +45,25 @@ export function MapPage() {
 
   const { map, loading: mapLoading } = useBattleMap(campaignId, isGm)
   const { data: tokens } = useMapTokens(map?.id)
+  const { data: edges } = useMapEdges(map?.id)
   const { data: npcs } = useNpcs(campaignId)
+  const { data: locations } = useLocations(campaignId)
   const { data: party } = useParty(campaignId)
   const pushToast = useUiStore((s) => s.pushToast)
 
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null)
   const selectedToken = tokens.find((t) => t.id === selectedTokenId) ?? null
 
+  // Path mode: GM clicks tokens in sequence to lay the route between them —
+  // click A then B connects them and leaves B as the new starting point, so
+  // a whole chain of locations can be strung together without re-toggling.
+  const [pathMode, setPathMode] = useState(false)
+  const [pathFromId, setPathFromId] = useState<string | null>(null)
+
   const myCharacterIds = new Set(party.filter((c) => c.ownerId === user?.id).map((c) => c.id))
 
   function canDrag(token: MapToken): boolean {
+    if (pathMode) return false
     return isGm || (token.refCharacterId != null && myCharacterIds.has(token.refCharacterId))
   }
 
@@ -58,6 +77,21 @@ export function MapPage() {
     } catch {
       pushToast("Impossible de déplacer ce pion.", 'error')
     }
+  }
+
+  function handleTokenClick(tokenId: string) {
+    if (!pathMode || !map || !campaignId) {
+      setSelectedTokenId(tokenId)
+      return
+    }
+    if (!pathFromId) {
+      setPathFromId(tokenId)
+      return
+    }
+    createEdge({ campaignId, mapId: map.id, fromTokenId: pathFromId, toTokenId: tokenId }).catch(() =>
+      pushToast('Impossible de relier ces pions.', 'error'),
+    )
+    setPathFromId(tokenId)
   }
 
   async function spawnToken(params: Omit<Parameters<typeof createToken>[0], 'campaignId' | 'mapId' | 'x' | 'y'>) {
@@ -96,7 +130,13 @@ export function MapPage() {
       {isGm && (
         <GmToolbar
           npcs={npcs}
+          locations={locations}
           party={party}
+          pathMode={pathMode}
+          onTogglePathMode={() => {
+            setPathMode((prev) => !prev)
+            setPathFromId(null)
+          }}
           onAddDecoration={(preset) =>
             spawnToken({ kind: 'decoration', label: preset.label, icon: preset.icon, color: preset.color })
           }
@@ -109,6 +149,15 @@ export function MapPage() {
               refNpcId: npc.id,
             })
           }
+          onAddLocation={(location) =>
+            spawnToken({
+              kind: 'location',
+              label: location.name,
+              icon: LOCATION_STYLE.icon,
+              color: LOCATION_STYLE.color,
+              refLocationId: location.id,
+            })
+          }
           onAddCharacter={(characterId, name) =>
             spawnToken({ kind: 'character', label: name, icon: '🧑', color: '#7c6ce8', refCharacterId: characterId })
           }
@@ -116,12 +165,21 @@ export function MapPage() {
         />
       )}
 
+      {pathMode && (
+        <p className="mb-3 text-xs text-ember-400">
+          Mode chemin actif — cliquez deux pions pour les relier, puis continuez la chaîne. Cliquez à nouveau sur
+          « Tracer un chemin » pour arrêter.
+        </p>
+      )}
+
       <MapGrid
         gridWidth={map.gridWidth}
         gridHeight={map.gridHeight}
         tokens={tokens}
-        selectedTokenId={selectedTokenId}
-        onSelect={setSelectedTokenId}
+        edges={edges}
+        selectedTokenId={pathMode ? pathFromId : selectedTokenId}
+        onSelect={handleTokenClick}
+        onDeselect={() => setSelectedTokenId(null)}
         canDrag={canDrag}
         onDrop={handleDrop}
       />
@@ -146,16 +204,24 @@ export function MapPage() {
 
 function GmToolbar({
   npcs,
+  locations,
   party,
+  pathMode,
+  onTogglePathMode,
   onAddDecoration,
   onAddNpc,
+  onAddLocation,
   onAddCharacter,
   onAddMonster,
 }: {
   npcs: Npc[]
+  locations: Location[]
   party: { id: string; name: string }[]
+  pathMode: boolean
+  onTogglePathMode: () => void
   onAddDecoration: (preset: { label: string; icon: string; color: string }) => void
   onAddNpc: (npc: Npc) => void
+  onAddLocation: (location: Location) => void
   onAddCharacter: (id: string, name: string) => void
   onAddMonster: () => void
 }) {
@@ -202,6 +268,25 @@ function GmToolbar({
 
       <select
         onChange={(e) => {
+          const location = locations.find((l) => l.id === e.target.value)
+          if (location) onAddLocation(location)
+          e.target.value = ''
+        }}
+        defaultValue=""
+        className="rounded-md border border-ink-700 bg-ink-800 px-2 py-1.5 text-xs text-parchment-200/80 outline-none"
+      >
+        <option value="" disabled>
+          + Lieu…
+        </option>
+        {locations.map((l) => (
+          <option key={l.id} value={l.id}>
+            {l.name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        onChange={(e) => {
           const character = party.find((c) => c.id === e.target.value)
           if (character) onAddCharacter(character.id, character.name)
           e.target.value = ''
@@ -218,6 +303,17 @@ function GmToolbar({
           </option>
         ))}
       </select>
+
+      <button
+        onClick={onTogglePathMode}
+        className={`ml-auto rounded-md border px-3 py-1.5 text-xs ${
+          pathMode
+            ? 'border-ember-500 bg-ember-500/10 text-ember-400'
+            : 'border-ink-700 text-parchment-200/70 hover:bg-ink-800'
+        }`}
+      >
+        🔗 Tracer un chemin
+      </button>
     </div>
   )
 }
@@ -258,35 +354,68 @@ function MapGrid({
   gridWidth,
   gridHeight,
   tokens,
+  edges,
   selectedTokenId,
   onSelect,
+  onDeselect,
   canDrag,
   onDrop,
 }: {
   gridWidth: number
   gridHeight: number
   tokens: MapToken[]
+  edges: MapEdge[]
   selectedTokenId: string | null
-  onSelect: (id: string | null) => void
+  onSelect: (id: string) => void
+  onDeselect: () => void
   canDrag: (token: MapToken) => boolean
   onDrop: (token: MapToken, x: number, y: number) => void
 }) {
+  const tokenById = new Map(tokens.map((t) => [t.id, t]))
+  const center = (t: MapToken) => ({ cx: t.x * CELL_SIZE + CELL_SIZE / 2, cy: t.y * CELL_SIZE + CELL_SIZE / 2 })
+  const width = gridWidth * CELL_SIZE
+  const height = gridHeight * CELL_SIZE
+
   return (
     <div
-      className="relative overflow-auto rounded-lg border border-ink-700 bg-[#1a2e22]"
+      // The whole point of a campaign-spanning map: this scrolls. The grid
+      // itself is sized to the map's full width/height (see useBattleMap's
+      // DEFAULT_GRID_*), typically well beyond one viewport.
+      className="relative max-h-[70vh] overflow-auto rounded-lg border border-ink-700 bg-[#1a2e22]"
       style={{
         backgroundImage:
           'linear-gradient(to right, rgba(245,236,217,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(245,236,217,0.06) 1px, transparent 1px)',
         backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onSelect(null)
+        if (e.target === e.currentTarget) onDeselect()
       }}
     >
-      <div
-        className="relative"
-        style={{ width: gridWidth * CELL_SIZE, height: gridHeight * CELL_SIZE }}
-      >
+      <div className="relative" style={{ width, height }}>
+        <svg width={width} height={height} className="pointer-events-none absolute left-0 top-0">
+          {edges.map((edge) => {
+            const from = tokenById.get(edge.fromTokenId)
+            const to = tokenById.get(edge.toTokenId)
+            if (!from || !to) return null
+            const a = center(from)
+            const b = center(to)
+            return (
+              <line
+                key={edge.id}
+                x1={a.cx}
+                y1={a.cy}
+                x2={b.cx}
+                y2={b.cy}
+                stroke="#e6926f"
+                strokeWidth={3}
+                strokeDasharray="2 8"
+                strokeLinecap="round"
+                opacity={0.7}
+              />
+            )
+          })}
+        </svg>
+
         {tokens.map((token) => (
           <TokenView
             key={token.id}

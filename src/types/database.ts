@@ -120,7 +120,7 @@ export interface BattleMap extends BaseRow {
   backgroundImageUrl: string | null
 }
 
-export type MapTokenKind = 'npc' | 'character' | 'monster' | 'decoration' | 'object'
+export type MapTokenKind = 'npc' | 'character' | 'monster' | 'decoration' | 'object' | 'location'
 
 export interface MapToken extends BaseRow {
   campaignId: string
@@ -133,5 +133,18 @@ export interface MapToken extends BaseRow {
   y: number
   refNpcId: string | null
   refCharacterId: string | null
+  refLocationId: string | null
   visibleToPlayers: boolean
+}
+
+/** A path segment connecting two tokens — how the "whole adventure" route
+ * between locations is drawn, laid out by the GM (or seeded from the
+ * chronicle) and editable like everything else on the map. */
+export interface MapEdge {
+  id: string
+  campaignId: string
+  mapId: string
+  fromTokenId: string
+  toTokenId: string
+  createdAt: string
 }

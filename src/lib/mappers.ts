@@ -5,6 +5,7 @@ import type {
   Character,
   InventoryItem,
   Location,
+  MapEdge,
   MapToken,
   Npc,
   Quest,
@@ -249,6 +250,7 @@ export interface MapTokenRow {
   y: number
   ref_npc_id: string | null
   ref_character_id: string | null
+  ref_location_id: string | null
   visible_to_players: boolean
   created_at: string
   updated_at: string
@@ -267,8 +269,29 @@ export function mapMapToken(row: MapTokenRow): MapToken {
     y: row.y,
     refNpcId: row.ref_npc_id,
     refCharacterId: row.ref_character_id,
+    refLocationId: row.ref_location_id,
     visibleToPlayers: row.visible_to_players,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+export interface MapEdgeRow {
+  id: string
+  campaign_id: string
+  map_id: string
+  from_token_id: string
+  to_token_id: string
+  created_at: string
+}
+
+export function mapMapEdge(row: MapEdgeRow): MapEdge {
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    mapId: row.map_id,
+    fromTokenId: row.from_token_id,
+    toTokenId: row.to_token_id,
+    createdAt: row.created_at,
   }
 }
