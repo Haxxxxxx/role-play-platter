@@ -140,6 +140,7 @@ export function LocationMapPage() {
               )}
 
               <MapGrid
+                mapId={map.id}
                 gridWidth={map.gridWidth}
                 gridHeight={map.gridHeight}
                 tokens={tokens}

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { CELL_SIZE } from '@/components/battlemap/presets'
+import { HexTerrain } from '@/components/battlemap/HexTerrain'
 import type { MapEdge, MapToken } from '@/types/database'
 
 const DRAG_THRESHOLD_PX = 6
 
 export function MapGrid({
+  mapId,
   gridWidth,
   gridHeight,
   tokens,
@@ -16,6 +18,10 @@ export function MapGrid({
   canDrag,
   onDrop,
 }: {
+  /** Seeds the decorative terrain (water/sand/dirt/forest) — deterministic
+   * per map, so it's stable across reloads without storing or hand-painting
+   * a single tile. */
+  mapId: string
   gridWidth: number
   gridHeight: number
   tokens: MapToken[]
@@ -56,16 +62,26 @@ export function MapGrid({
     <div
       ref={containerRef}
       className="relative max-h-[70vh] overflow-auto rounded-lg border border-ink-700 bg-[#1a2e22]"
-      style={{
-        backgroundImage:
-          'linear-gradient(to right, rgba(245,236,217,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(245,236,217,0.06) 1px, transparent 1px)',
-        backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
-      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onDeselect()
       }}
     >
       <div className="relative" style={{ width, height }}>
+        <HexTerrain seed={mapId} width={width} height={height} />
+
+        {/* Square token-snap grid, drawn as its own layer so it stays
+            legible over the terrain instead of being painted behind it. */}
+        <div
+          className="pointer-events-none absolute left-0 top-0"
+          style={{
+            width,
+            height,
+            backgroundImage:
+              'linear-gradient(to right, rgba(245,236,217,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(245,236,217,0.12) 1px, transparent 1px)',
+            backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
+          }}
+        />
+
         <svg width={width} height={height} className="pointer-events-none absolute left-0 top-0">
           {edges.map((edge) => {
             const from = tokenById.get(edge.fromTokenId)
