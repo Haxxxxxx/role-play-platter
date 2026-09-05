@@ -7,10 +7,10 @@ import { CAMPAIGN_STATUS_LABEL, CAMPAIGN_STATUS_BADGE_CLASS } from '@/lib/campai
 import type { CampaignStatus } from '@/types/database'
 
 const ALL_TABS = [
-  { to: '', label: 'Chronicle', end: true, gmOnly: false },
-  { to: 'notes', label: 'GM Notes', end: false, gmOnly: true },
-  { to: 'party', label: 'Party', end: false, gmOnly: false },
-  { to: 'map', label: 'Battle Map', end: false, gmOnly: false },
+  { to: '', label: 'Chronique', end: true, gmOnly: false },
+  { to: 'notes', label: 'Notes du MJ', end: false, gmOnly: true },
+  { to: 'party', label: 'Groupe', end: false, gmOnly: false },
+  { to: 'map', label: 'Carte', end: false, gmOnly: false },
 ]
 
 export function CampaignLayout() {
@@ -24,8 +24,8 @@ export function CampaignLayout() {
     onError: () => pushToast('Impossible de changer le statut de la campagne.', 'error'),
   })
 
-  if (loading) return <div className="p-10 text-parchment-200/60">Loading campaign…</div>
-  if (!campaign) return <div className="p-10 text-parchment-200/60">Campaign not found.</div>
+  if (loading) return <div className="p-10 text-parchment-200/60">Chargement de la campagne…</div>
+  if (!campaign) return <div className="p-10 text-parchment-200/60">Campagne introuvable.</div>
 
   const isGm = user?.id === campaign.gmId
   const tabs = ALL_TABS.filter((tab) => !tab.gmOnly || isGm)
@@ -81,7 +81,7 @@ export function CampaignLayout() {
               </button>
             )}
             <NavLink to="/" className="text-sm text-parchment-200/60 hover:text-parchment-100">
-              ← All campaigns
+              ← Toutes les campagnes
             </NavLink>
           </div>
         </div>

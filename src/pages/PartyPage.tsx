@@ -36,12 +36,12 @@ export function PartyPage() {
       {isGm && campaignId && <RosterSection campaignId={campaignId} gmId={campaign.gmId} />}
 
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="font-display text-xl text-parchment-100">Party</h2>
+        <h2 className="font-display text-xl text-parchment-100">Groupe</h2>
         <button
           onClick={() => setShowForm((s) => !s)}
           className="rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800"
         >
-          {showForm ? 'Cancel' : '+ Add character'}
+          {showForm ? 'Annuler' : '+ Ajouter un personnage'}
         </button>
       </div>
 
@@ -53,9 +53,9 @@ export function PartyPage() {
         />
       )}
 
-      {loading && <p className="text-parchment-200/60">Loading…</p>}
+      {loading && <p className="text-parchment-200/60">Chargement…</p>}
       {!loading && party.length === 0 && !showForm && (
-        <p className="text-sm text-parchment-200/60">No characters yet — add one above.</p>
+        <p className="text-sm text-parchment-200/60">Aucun personnage pour l'instant — ajoutez-en un ci-dessus.</p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -105,7 +105,7 @@ function RosterSection({ campaignId, gmId }: { campaignId: string; gmId: string 
   return (
     <section className="mb-8 rounded-xl border border-ink-700 bg-ink-900 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-display text-lg text-parchment-100">Roster</h3>
+        <h3 className="font-display text-lg text-parchment-100">Participants</h3>
         <button onClick={copyInviteLink} className="text-xs text-parchment-200/50 hover:text-ember-400">
           🔗 Copier le lien d'invitation
         </button>
@@ -177,7 +177,7 @@ function NewCharacterForm({
     mutationFn: () => createCharacter({ campaignId, name, playerName, ownerId, classAndLevel, race }),
     onSuccess: () => {
       onDone()
-      pushToast('Character added.', 'success')
+      pushToast('Personnage ajouté.', 'success')
     },
   })
 
@@ -193,19 +193,19 @@ function NewCharacterForm({
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Character name (ex. Elyne)"
+        placeholder="Nom du personnage (ex. Elyne)"
         className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
       />
       <input
         value={playerName}
         onChange={(e) => setPlayerName(e.target.value)}
-        placeholder="Player name"
+        placeholder="Nom du joueur"
         className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
       />
       <input
         value={classAndLevel}
         onChange={(e) => setClassAndLevel(e.target.value)}
-        placeholder="Class & level (ex. Roublard 3)"
+        placeholder="Classe et niveau (ex. Roublard 3)"
         className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
       />
       <input
@@ -219,7 +219,7 @@ function NewCharacterForm({
         disabled={mutation.isPending || !name.trim()}
         className="self-start rounded-md bg-ember-500 px-4 py-2 text-sm font-medium text-ink-950 disabled:opacity-50 sm:col-span-2"
       >
-        {mutation.isPending ? 'Adding…' : 'Add to party'}
+        {mutation.isPending ? 'Ajout…' : 'Ajouter au groupe'}
       </button>
     </form>
   )
@@ -237,10 +237,10 @@ function CharacterSheet({ character, onOpenOnMap }: { character: Character; onOp
       </p>
       <div className="mt-3 flex gap-4 text-sm">
         <span>
-          HP <strong className="text-parchment-100">{character.hp.current}/{character.hp.max}</strong>
+          PV <strong className="text-parchment-100">{character.hp.current}/{character.hp.max}</strong>
         </span>
         <span>
-          AC <strong className="text-parchment-100">{character.armorClass}</strong>
+          CA <strong className="text-parchment-100">{character.armorClass}</strong>
         </span>
       </div>
       <div className="mt-3 grid grid-cols-6 gap-1 text-center text-xs">
@@ -252,9 +252,9 @@ function CharacterSheet({ character, onOpenOnMap }: { character: Character; onOp
         ))}
       </div>
       <div className="mt-4">
-        <h4 className="mb-1 text-xs uppercase tracking-wide text-parchment-200/50">Inventory</h4>
+        <h4 className="mb-1 text-xs uppercase tracking-wide text-parchment-200/50">Inventaire</h4>
         {character.inventory.length === 0 ? (
-          <p className="text-sm text-parchment-200/40">Empty — items land here automatically from GM notes.</p>
+          <p className="text-sm text-parchment-200/40">Vide — les objets arrivent ici automatiquement depuis les notes du MJ.</p>
         ) : (
           <ul className="flex flex-col gap-1 text-sm">
             {character.inventory.map((item) => (
@@ -262,7 +262,7 @@ function CharacterSheet({ character, onOpenOnMap }: { character: Character; onOp
                 <span>
                   {item.name} {item.quantity > 1 && `×${item.quantity}`}
                 </span>
-                {item.equipped && <span className="text-xs text-arcane-500">equipped</span>}
+                {item.equipped && <span className="text-xs text-arcane-500">équipé</span>}
               </li>
             ))}
           </ul>

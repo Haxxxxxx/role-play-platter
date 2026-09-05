@@ -17,7 +17,7 @@ export function Toaster() {
         <button
           key={toast.id}
           onClick={() => dismissToast(toast.id)}
-          className={`rounded-lg border px-4 py-3 text-left text-sm shadow-lg ${VARIANT_STYLES[toast.variant]}`}
+          className={`animate-toast-in rounded-lg border px-4 py-3 text-left text-sm shadow-lg transition hover:brightness-110 ${VARIANT_STYLES[toast.variant]}`}
         >
           {toast.message}
         </button>

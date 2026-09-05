@@ -17,7 +17,7 @@ export function ProfilePage() {
     try {
       await linkGoogleAccount()
     } catch {
-      pushToast('Could not link a Google account — try again.', 'error')
+      pushToast('Impossible de lier un compte Google — réessayez.', 'error')
     }
   }
 
@@ -115,7 +115,7 @@ export function ProfilePage() {
           onClick={() => signOutUser()}
           className="w-full rounded-md border border-ink-700 py-2 text-sm text-parchment-200/70 hover:bg-ink-800"
         >
-          Sign out
+          Se déconnecter
         </button>
       )}
     </div>

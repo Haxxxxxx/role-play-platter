@@ -9,9 +9,9 @@ import { useUiStore } from '@/store/useUiStore'
 import type { Campaign, SessionNoteKind } from '@/types/database'
 
 const KIND_LABEL: Record<SessionNoteKind, string> = {
-  'session-recap': 'Session recap',
-  'item-update': 'Item / inventory update',
-  freeform: 'Freeform note',
+  'session-recap': 'Récap de session',
+  'item-update': 'Mise à jour d\'objet',
+  freeform: 'Note libre',
 }
 
 const CATEGORY_STYLE: Record<RecommendationCategory, { label: string; color: string }> = {
@@ -37,11 +37,11 @@ export function NotesPage() {
     onSuccess: (result) => {
       setText('')
       pushToast(
-        `Chronicle updated: ${result.timelineEventsCreated} events, ${result.npcsTouched} NPCs, ${result.questsTouched} quests, ${result.itemChangesApplied} item changes.`,
+        `Chronique mise à jour : ${result.timelineEventsCreated} événements, ${result.npcsTouched} PNJ, ${result.questsTouched} quêtes, ${result.itemChangesApplied} objets.`,
         'success',
       )
     },
-    onError: () => pushToast('Gemini could not process that note — check the note history for details.', 'error'),
+    onError: () => pushToast("Gemini n'a pas pu traiter cette note — voir l'historique pour le détail.", 'error'),
   })
 
   const recommendations = useMutation({
@@ -55,12 +55,13 @@ export function NotesPage() {
       <section>
         {isGm ? (
           <>
-            <h2 className="mb-3 font-display text-xl text-parchment-100">Drop in what happened</h2>
+            <h2 className="mb-3 font-display text-xl text-parchment-100">Racontez ce qui s'est passé</h2>
             <p className="mb-4 text-sm text-parchment-200/60">
-              Paste raw session notes, or a quick line like "Elyne a récupéré une dague +1 sur le
-              capitaine des bandits" — Gemini structures it into the timeline, NPC codex, quest log,
-              and party inventory automatically. This is temporary/working memory: nothing here is
-              final until it lands in the chronicle.
+              Collez vos notes de session brutes, ou une simple ligne comme « Elyne a récupéré une
+              dague +1 sur le capitaine des bandits » — Gemini structure ça automatiquement dans la
+              timeline, le codex des PNJ, le journal des quêtes et l'inventaire du groupe. Ceci est une
+              mémoire de travail temporaire : rien n'est définitif tant que ça n'a pas atterri dans la
+              chronique.
             </p>
             <form
               className="flex flex-col gap-3"
@@ -113,8 +114,8 @@ export function NotesPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-lg text-parchment-100">Note history</h2>
-        {loading && <p className="text-sm text-parchment-200/60">Loading…</p>}
+        <h2 className="mb-3 font-display text-lg text-parchment-100">Historique des notes</h2>
+        {loading && <p className="text-sm text-parchment-200/60">Chargement…</p>}
         <ul className="flex flex-col gap-3">
           {notes.map((note) => (
             <li key={note.id} className="rounded-lg border border-ink-700 bg-ink-900 p-3 text-sm">

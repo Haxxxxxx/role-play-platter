@@ -21,7 +21,7 @@ export function LoginPage() {
     try {
       await startAsGuest(name)
     } catch {
-      pushToast('Could not start a session — enable "Anonymous sign-ins" in Supabase Auth settings.', 'error')
+      pushToast('Impossible de démarrer une session — activez "Anonymous sign-ins" dans les réglages Auth de Supabase.', 'error')
       setPending(null)
     }
   }
@@ -31,7 +31,7 @@ export function LoginPage() {
     try {
       await signInWithGoogle()
     } catch {
-      pushToast('Sign-in failed — try again.', 'error')
+      pushToast('Connexion échouée — réessayez.', 'error')
       setPending(null)
     }
   }
@@ -41,8 +41,8 @@ export function LoginPage() {
       <div>
         <h1 className="font-display text-4xl text-parchment-100">Role Play Platter</h1>
         <p className="mt-2 max-w-md text-parchment-200/70">
-          A living chronicle for your table — drop in session notes, watch the timeline, NPC codex,
-          quest log, and party history write themselves.
+          La chronique vivante de votre table — déposez vos notes de session, et regardez la timeline, le
+          codex des PNJ, le journal des quêtes et l'historique du groupe s'écrire tout seuls.
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export function LoginPage() {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
+          placeholder="Votre nom"
           maxLength={40}
           autoFocus
           className="w-full rounded-lg border border-ink-700 bg-ink-800 px-4 py-2.5 text-center text-sm outline-none focus:border-ember-500"
@@ -60,11 +60,11 @@ export function LoginPage() {
           disabled={pending !== null || !name.trim()}
           className="w-full rounded-lg bg-ember-500 px-6 py-3 font-medium text-ink-950 transition hover:bg-ember-400 disabled:opacity-50"
         >
-          {pending === 'guest' ? 'Starting…' : 'Start playing'}
+          {pending === 'guest' ? 'Démarrage…' : 'Commencer à jouer'}
         </button>
         <p className="text-xs text-parchment-200/40">
-          No account needed — create and play a campaign right away. Save it to a real account later,
-          from your profile, whenever you're ready.
+          Aucun compte requis — créez et jouez une campagne tout de suite. Vous pourrez la sauvegarder sur
+          un vrai compte plus tard, depuis votre profil, quand vous voudrez.
         </p>
       </form>
 
@@ -73,7 +73,7 @@ export function LoginPage() {
         disabled={pending !== null}
         className="text-sm text-parchment-200/60 underline decoration-dotted hover:text-parchment-100 disabled:opacity-50"
       >
-        {pending === 'google' ? 'Redirecting…' : 'Already have an account? Sign in with Google'}
+        {pending === 'google' ? 'Redirection…' : 'Déjà un compte ? Se connecter avec Google'}
       </button>
     </div>
   )

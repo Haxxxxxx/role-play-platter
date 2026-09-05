@@ -42,11 +42,11 @@ export function ChroniclePage() {
   return (
     <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
       <section>
-        <h2 className="mb-4 font-display text-xl text-parchment-100">Party History</h2>
-        {timelineLoading && <p className="text-parchment-200/60">Loading…</p>}
+        <h2 className="mb-4 font-display text-xl text-parchment-100">Historique du groupe</h2>
+        {timelineLoading && <p className="text-parchment-200/60">Chargement…</p>}
         {!timelineLoading && timeline.length === 0 && (
           <p className="text-sm text-parchment-200/60">
-            Nothing recorded yet — add a session in <em>GM Notes</em> and it'll appear here.
+            Rien pour l'instant — ajoutez une session dans <em>Notes du MJ</em> et elle apparaîtra ici.
           </p>
         )}
         <ol className="relative border-l border-ink-700 pl-6">
@@ -80,8 +80,8 @@ export function ChroniclePage() {
 
       <aside className="flex flex-col gap-8">
         <div>
-          <h2 className="mb-3 font-display text-lg text-parchment-100">Quest Log</h2>
-          {quests.length === 0 && <p className="text-sm text-parchment-200/60">No quests yet.</p>}
+          <h2 className="mb-3 font-display text-lg text-parchment-100">Journal des quêtes</h2>
+          {quests.length === 0 && <p className="text-sm text-parchment-200/60">Aucune quête pour l'instant.</p>}
           <ul className="flex flex-col gap-2">
             {quests.map((q) => (
               <li key={q.id} className={`rounded-lg border p-3 text-sm ${QUEST_STATUS_COLOR[q.status]}`}>
@@ -112,8 +112,8 @@ export function ChroniclePage() {
         </div>
 
         <div>
-          <h2 className="mb-3 font-display text-lg text-parchment-100">NPC Codex</h2>
-          {npcs.length === 0 && <p className="text-sm text-parchment-200/60">No NPCs recorded yet.</p>}
+          <h2 className="mb-3 font-display text-lg text-parchment-100">Codex des PNJ</h2>
+          {npcs.length === 0 && <p className="text-sm text-parchment-200/60">Aucun PNJ pour l'instant.</p>}
           <ul className="flex flex-col gap-2">
             {npcs.map((npc) => (
               <li key={npc.id}>

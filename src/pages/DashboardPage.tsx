@@ -35,10 +35,10 @@ export function DashboardPage() {
       setName('')
       setDescription('')
       setInvitees([])
-      pushToast('Campaign created.', 'success')
+      pushToast('Campagne créée.', 'success')
       queryClient.invalidateQueries({ queryKey: ['campaigns'] })
     },
-    onError: () => pushToast('Could not create campaign.', 'error'),
+    onError: () => pushToast('Impossible de créer la campagne.', 'error'),
   })
 
   function copyInviteLink(campaignId: string) {
@@ -52,22 +52,22 @@ export function DashboardPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <header className="mb-8 flex items-center justify-between">
-        <h1 className="font-display text-3xl text-parchment-100">Your Campaigns</h1>
+        <h1 className="font-display text-3xl text-parchment-100">Vos campagnes</h1>
         <Link
           to="/profile"
           className="flex items-center gap-2 rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800"
         >
-          👤 Profile
+          👤 Profil
           {user?.is_anonymous && (
             <span className="rounded-full border border-arcane-500/50 px-1.5 py-0.5 text-[10px] uppercase text-arcane-500">
-              Guest
+              Invité
             </span>
           )}
         </Link>
       </header>
 
       <section className="mb-10 rounded-xl border border-ink-700 bg-ink-900 p-5">
-        <h2 className="mb-3 font-display text-lg text-parchment-100">Start a new campaign</h2>
+        <h2 className="mb-3 font-display text-lg text-parchment-100">Démarrer une nouvelle campagne</h2>
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
@@ -79,7 +79,7 @@ export function DashboardPage() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Campaign name (ex. La Malédiction de Kaer Doreth)"
+            placeholder="Nom de la campagne (ex. La Malédiction de Kaer Doreth)"
             className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
           />
           <div className="flex gap-3">
@@ -97,7 +97,7 @@ export function DashboardPage() {
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="One-line pitch (optional)"
+              placeholder="Pitch en une ligne (optionnel)"
               className="flex-1 rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
             />
           </div>
@@ -114,15 +114,15 @@ export function DashboardPage() {
             disabled={createMutation.isPending || !name.trim()}
             className="self-start rounded-md bg-ember-500 px-4 py-2 text-sm font-medium text-ink-950 disabled:opacity-50"
           >
-            {createMutation.isPending ? 'Creating…' : 'Create campaign'}
+            {createMutation.isPending ? 'Création…' : 'Créer la campagne'}
           </button>
         </form>
       </section>
 
       <section>
-        {loading && <p className="text-parchment-200/60">Loading…</p>}
+        {loading && <p className="text-parchment-200/60">Chargement…</p>}
         {!loading && campaigns.length === 0 && (
-          <p className="text-parchment-200/60">No campaigns yet — start one above.</p>
+          <p className="text-parchment-200/60">Aucune campagne pour le moment — créez-en une ci-dessus.</p>
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           {campaigns.map((c) => (
