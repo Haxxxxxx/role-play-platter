@@ -61,6 +61,7 @@ export interface CharacterRow {
   skills: Skill[]
   notes: string
   is_npc_controlled: boolean
+  portrait_url: string | null
   created_at: string
   updated_at: string
 }
@@ -81,6 +82,7 @@ export function mapCharacter(row: CharacterRow): Character {
     skills: row.skills ?? [],
     notes: row.notes,
     isNpcControlled: row.is_npc_controlled,
+    portraitUrl: row.portrait_url,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

@@ -69,6 +69,7 @@ export interface Character extends BaseRow {
   skills: Skill[]
   notes: string
   isNpcControlled: boolean
+  portraitUrl: string | null
 }
 
 export type SessionNoteKind = 'session-recap' | 'item-update' | 'freeform'

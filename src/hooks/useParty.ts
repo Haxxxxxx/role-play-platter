@@ -156,3 +156,30 @@ export async function addSkillsBulk(characterId: string, newSkills: { name: stri
     .eq('id', characterId)
   if (error) throw error
 }
+
+const MAX_PORTRAIT_BYTES = 5 * 1024 * 1024 // 5 MB
+
+/**
+ * No AI image generation available on the free tier (checked live against
+ * every Gemini image model — all billing-only) — this is a straight file
+ * upload instead. A fresh random filename per upload (never a fixed path)
+ * so the resulting public URL always changes, avoiding a stale cached
+ * image after replacing the portrait; the old file is simply left orphaned
+ * in storage rather than cleaned up, an acceptable trade for the
+ * simplicity here.
+ */
+export async function uploadCharacterPortrait(characterId: string, file: File): Promise<string> {
+  if (file.size > MAX_PORTRAIT_BYTES) {
+    throw new Error('Image trop lourde (5 Mo maximum).')
+  }
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const path = `${characterId}/${crypto.randomUUID()}.${ext}`
+
+  const { error: uploadError } = await supabase.storage.from('portraits').upload(path, file, { cacheControl: '3600' })
+  if (uploadError) throw uploadError
+
+  const { data } = supabase.storage.from('portraits').getPublicUrl(path)
+  const { error } = await supabase.from('characters').update({ portrait_url: data.publicUrl }).eq('id', characterId)
+  if (error) throw error
+  return data.publicUrl
+}

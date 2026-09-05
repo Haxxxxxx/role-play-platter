@@ -7,6 +7,7 @@ import { CampaignLayout } from '@/pages/CampaignLayout'
 import { ChroniclePage } from '@/pages/ChroniclePage'
 import { NotesPage } from '@/pages/NotesPage'
 import { PartyPage } from '@/pages/PartyPage'
+import { CharacterPage } from '@/pages/CharacterPage'
 import { MapPage } from '@/pages/MapPage'
 import { LocationMapPage } from '@/pages/LocationMapPage'
 import { JoinCampaignPage } from '@/pages/JoinCampaignPage'
@@ -39,6 +40,7 @@ function App() {
           <Route index element={<ChroniclePage />} />
           <Route path="notes" element={<NotesPage />} />
           <Route path="party" element={<PartyPage />} />
+          <Route path="character/:characterId" element={<CharacterPage />} />
           <Route path="map" element={<MapPage />} />
           <Route path="map/:locationId" element={<LocationMapPage />} />
         </Route>
