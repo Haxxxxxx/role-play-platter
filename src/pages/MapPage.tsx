@@ -117,14 +117,19 @@ export function MapPage() {
       }
       // Bring the traveling character's own token along onto the location's
       // detail map — the same hero circle, not a stray copy left behind on
-      // the world map. Only possible once the GM has actually opened that
-      // location's map; if not, still navigate (shows "waiting on the GM"),
-      // the character just doesn't have a token to place anywhere yet.
-      if (!isGm && myTokens.length > 0) {
+      // the world map. Only the token(s) that actually got close enough to
+      // trigger this travel — a player controlling more than one character
+      // shouldn't have a character clear across the map teleported in just
+      // because a different one of theirs walked up to the pin. Only
+      // possible once the GM has actually opened that location's map; if
+      // not, still navigate (shows "waiting on the GM"), the character just
+      // doesn't have a token to place anywhere yet.
+      const travelingTokens = myTokens.filter((mt) => chebyshevDistance(mt, token) <= TRAVEL_RANGE)
+      if (!isGm && travelingTokens.length > 0) {
         const destMapId = await getMapId(campaignId!, token.refLocationId)
         if (destMapId) {
           await Promise.all(
-            myTokens.map((t) => moveTokenToMap(t.id, destMapId, LOCATION_MAP_ENTRY.x, LOCATION_MAP_ENTRY.y)),
+            travelingTokens.map((t) => moveTokenToMap(t.id, destMapId, LOCATION_MAP_ENTRY.x, LOCATION_MAP_ENTRY.y)),
           ).catch(() => pushToast("Le pion n'a pas pu suivre jusqu'ici.", 'error'))
         }
       }
