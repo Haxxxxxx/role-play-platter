@@ -5,6 +5,22 @@ import type { MapEdge, MapToken } from '@/types/database'
 
 const DRAG_THRESHOLD_PX = 6
 
+// Tokens rendered purely in array/DOM order (no explicit stacking) meant a
+// character could end up visually behind a decoration or NPC pin depending
+// on incidental insertion order — most visibly, a travelling character's
+// token landing "under" the static dressing already on a location's detail
+// map. Explicit tiers instead: background dressing lowest, the player's own
+// characters above everything static, whatever's selected/being dragged
+// always on top regardless of kind.
+const KIND_Z_INDEX: Record<string, number> = {
+  decoration: 10,
+  object: 10,
+  location: 15,
+  npc: 20,
+  monster: 20,
+  character: 30,
+}
+
 export function MapGrid({
   mapId,
   terrainText,
@@ -250,6 +266,7 @@ function TokenView({
         height: CELL_SIZE - 4,
         backgroundColor: token.color,
         touchAction: 'none',
+        zIndex: dragOffset ? 100 : selected ? 50 : (KIND_Z_INDEX[token.kind] ?? 10),
       }}
       title={token.label}
     >

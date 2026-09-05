@@ -64,15 +64,26 @@ export function LocationMapPage() {
   // Bring the character's own token back onto the overworld, at this
   // location's pin, instead of leaving it stranded here once the player
   // has moved on — the same circle that followed them in follows them out.
+  //
+  // The token-follow side effect is wrapped as a whole: it must never be
+  // able to skip the actual navigate() below just because one of its own
+  // calls rejected in a way the narrower .catch() further in didn't
+  // anticipate (a dropped connection rejecting getMapId/
+  // getLocationPinPosition themselves, not just the moveTokenToMap calls)
+  // — that would silently strand the click with no navigation and no error
+  // shown, which is exactly what "can't get out of the location" looks
+  // like from the outside.
   async function handleReturnToWorldMap() {
-    if (!isGm && myTokens.length > 0 && campaignId && locationId) {
-      const worldMapId = await getMapId(campaignId, null)
-      const pin = worldMapId ? await getLocationPinPosition(worldMapId, locationId) : null
-      if (worldMapId && pin) {
-        await Promise.all(myTokens.map((t) => moveTokenToMap(t.id, worldMapId, pin.x, pin.y))).catch(() =>
-          pushToast("Le pion n'a pas pu revenir sur la carte du monde.", 'error'),
-        )
+    try {
+      if (!isGm && myTokens.length > 0 && campaignId && locationId) {
+        const worldMapId = await getMapId(campaignId, null)
+        const pin = worldMapId ? await getLocationPinPosition(worldMapId, locationId) : null
+        if (worldMapId && pin) {
+          await Promise.all(myTokens.map((t) => moveTokenToMap(t.id, worldMapId, pin.x, pin.y)))
+        }
       }
+    } catch {
+      pushToast("Le pion n'a pas pu revenir sur la carte du monde.", 'error')
     }
     navigate(`/campaign/${campaignId}/map`)
   }

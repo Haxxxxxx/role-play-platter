@@ -124,14 +124,25 @@ export function MapPage() {
       // possible once the GM has actually opened that location's map; if
       // not, still navigate (shows "waiting on the GM"), the character just
       // doesn't have a token to place anywhere yet.
-      const travelingTokens = myTokens.filter((mt) => chebyshevDistance(mt, token) <= TRAVEL_RANGE)
-      if (!isGm && travelingTokens.length > 0) {
-        const destMapId = await getMapId(campaignId!, token.refLocationId)
-        if (destMapId) {
-          await Promise.all(
-            travelingTokens.map((t) => moveTokenToMap(t.id, destMapId, LOCATION_MAP_ENTRY.x, LOCATION_MAP_ENTRY.y)),
-          ).catch(() => pushToast("Le pion n'a pas pu suivre jusqu'ici.", 'error'))
+      //
+      // Wrapped as a whole: this is a nice-to-have riding along with the
+      // actual navigation, which must never get skipped just because a
+      // token-follow call failed in a way .catch() further down didn't
+      // anticipate (a dropped connection rejecting getMapId itself, not
+      // just the moveTokenToMap calls) — that would silently strand the
+      // click with no navigation and no error shown, reading as "stuck".
+      try {
+        const travelingTokens = myTokens.filter((mt) => chebyshevDistance(mt, token) <= TRAVEL_RANGE)
+        if (!isGm && travelingTokens.length > 0) {
+          const destMapId = await getMapId(campaignId!, token.refLocationId)
+          if (destMapId) {
+            await Promise.all(
+              travelingTokens.map((t) => moveTokenToMap(t.id, destMapId, LOCATION_MAP_ENTRY.x, LOCATION_MAP_ENTRY.y)),
+            )
+          }
         }
+      } catch {
+        pushToast("Le pion n'a pas pu suivre jusqu'ici.", 'error')
       }
       navigate(`/campaign/${campaignId}/map/${token.refLocationId}`)
       return
