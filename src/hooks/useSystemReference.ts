@@ -17,6 +17,19 @@ interface SystemReferenceRow {
   skills: ReferenceEntry[]
 }
 
+// Must be a stable, module-level reference — useSupabaseCollection's effect
+// depends on `mapRow`, so an inline arrow function written directly in the
+// hook body below would be a new function identity every render, re-running
+// the effect (and its setState) every render, forever. Every other
+// useSupabaseCollection caller in the app already passes a top-level named
+// function (mapCharacter, mapNpc, ...) for exactly this reason; this one
+// just missed it — it froze the whole Party page (this hook is called at
+// PartyPage's top level) in an infinite render loop, which is what made
+// the page unresponsive to any navigation click.
+function mapSystemReferenceRow(row: SystemReferenceRow): SystemReferenceState {
+  return { classes: row.classes ?? [], skills: row.skills ?? [] }
+}
+
 /** At most one row per campaign — reuses useSupabaseCollection (which
  * filters by a column, here campaign_id) rather than a bespoke single-row
  * hook, so it gets the same live-update-on-any-change behavior for free. */
@@ -25,7 +38,7 @@ export function useSystemReference(campaignId: string | undefined) {
     table: 'system_reference',
     filterColumn: 'campaign_id',
     filterValue: campaignId,
-    mapRow: (row) => ({ classes: row.classes ?? [], skills: row.skills ?? [] }),
+    mapRow: mapSystemReferenceRow,
   })
   return { reference: data[0] ?? null, loading }
 }
