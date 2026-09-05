@@ -16,6 +16,7 @@ export function MapGrid({
   selectedTokenId,
   centerTokenId,
   mutedTokenIds,
+  expanded,
   onActivate,
   onDeselect,
   canDrag,
@@ -43,6 +44,9 @@ export function MapGrid({
   /** Dims these tokens (e.g. location pins a player's character hasn't
    * travelled near yet) — still clickable, just visually deprioritized. */
   mutedTokenIds?: Set<string>
+  /** Fullscreen mode: use the actual viewport height instead of the 70vh
+   * cap that exists to keep the grid from taking over the normal page. */
+  expanded?: boolean
   onActivate: (token: MapToken) => void
   onDeselect: () => void
   canDrag: (token: MapToken) => boolean
@@ -80,7 +84,9 @@ export function MapGrid({
       // leftover space as flat unstyled background past the terrain/grid.
       // max-w-full + overflow-auto still let it scroll when the grid (the
       // overworld) is the wider one.
-      className="relative inline-block max-h-[70vh] max-w-full overflow-auto rounded-lg border border-ink-700 bg-[#1a2e22] align-top"
+      className={`relative inline-block max-w-full overflow-auto rounded-lg border border-ink-700 bg-[#1a2e22] align-top ${
+        expanded ? 'max-h-[calc(100vh-2rem)]' : 'max-h-[70vh]'
+      }`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onDeselect()
       }}
@@ -164,7 +170,22 @@ function TokenView({
 }) {
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const movedRef = useRef(false)
+  const elRef = useRef<HTMLDivElement>(null)
   const [dragOffset, setDragOffset] = useState<{ dx: number; dy: number } | null>(null)
+  // Where the token visually sits right after a drop, independent of the
+  // server round-trip. Without this it would snap back to the old token.x/y
+  // the instant the pointer lifts (dragOffset resets to null but the
+  // `tokens` prop hasn't caught up yet), then jump forward again once
+  // Realtime delivers the update a few hundred ms later — that snap-back
+  // read as the token vanishing, especially dropped near the edge of the
+  // scrollable viewport. Cleared once the real token.x/y matches it.
+  const [optimisticPos, setOptimisticPos] = useState<{ x: number; y: number } | null>(null)
+  // Derived at render time rather than cleared via an effect: once the real
+  // token.x/y catches up to what was optimistically shown, just stop
+  // reading the stale optimistic value (still holding the actual state is
+  // harmless — the next drag overwrites it anyway).
+  const effectiveOptimisticPos =
+    optimisticPos && (optimisticPos.x !== token.x || optimisticPos.y !== token.y) ? optimisticPos : null
 
   function onPointerDown(e: React.PointerEvent) {
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -186,7 +207,16 @@ function TokenView({
       if (draggable && dragOffset) {
         const newX = token.x + Math.round(dragOffset.dx / CELL_SIZE)
         const newY = token.y + Math.round(dragOffset.dy / CELL_SIZE)
+        setOptimisticPos({ x: newX, y: newY })
         onDrop(newX, newY)
+        // Keep it visible after a drop that lands near the scroll
+        // container's edge instead of leaving the viewer to hunt for it.
+        requestAnimationFrame(() => elRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' }))
+        // Safety net: if the write silently fails server-side (RLS, a
+        // dropped connection) the effect above never fires because
+        // token.x/y never catches up — fall back to the real position
+        // rather than staying wrong forever.
+        setTimeout(() => setOptimisticPos((p) => (p?.x === newX && p?.y === newY ? null : p)), 5000)
       }
     } else {
       // A clean click (no meaningful movement) — always activates, even for
@@ -198,11 +228,13 @@ function TokenView({
     setDragOffset(null)
   }
 
-  const left = token.x * CELL_SIZE + (dragOffset?.dx ?? 0)
-  const top = token.y * CELL_SIZE + (dragOffset?.dy ?? 0)
+  const basePos = effectiveOptimisticPos ?? { x: token.x, y: token.y }
+  const left = basePos.x * CELL_SIZE + (dragOffset?.dx ?? 0)
+  const top = basePos.y * CELL_SIZE + (dragOffset?.dy ?? 0)
 
   return (
     <div
+      ref={elRef}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}

@@ -189,6 +189,48 @@ export async function moveToken(tokenId: string, x: number, y: number): Promise<
   if (error) throw error
 }
 
+/** Center of a location's own detail map — where a travelling character's
+ * token lands, since there's no meaningful "entrance" to place it at. */
+export const LOCATION_MAP_ENTRY = { x: Math.floor(LOCATION_GRID.width / 2), y: Math.floor(LOCATION_GRID.height / 2) }
+
+/** The one battle_maps row for a campaign's overworld (locationId null) or a
+ * specific location — null if the GM hasn't opened it yet (players can't
+ * create one themselves, so this is how a caller checks before trying to
+ * move a token onto it). */
+export async function getMapId(campaignId: string, locationId: string | null): Promise<string | null> {
+  let query = supabase.from('battle_maps').select('id').eq('campaign_id', campaignId)
+  query = locationId ? query.eq('location_id', locationId) : query.is('location_id', null)
+  const { data } = await query.maybeSingle()
+  return (data as { id: string } | null)?.id ?? null
+}
+
+/** Where a location's own pin sits on the overworld map — so a character
+ * leaving that location can be placed back at the right spot instead of the
+ * map's origin corner. */
+export async function getLocationPinPosition(
+  worldMapId: string,
+  locationId: string,
+): Promise<{ x: number; y: number } | null> {
+  const { data } = await supabase
+    .from('map_tokens')
+    .select('x, y')
+    .eq('map_id', worldMapId)
+    .eq('kind', 'location')
+    .eq('ref_location_id', locationId)
+    .maybeSingle()
+  return data as { x: number; y: number } | null
+}
+
+/** Moves a token onto a different map entirely — how a character's own
+ * token follows them between the overworld and a location's detail map,
+ * rather than a second token appearing on each and the two drifting out of
+ * sync. Same "player moves own character token" RLS policy as moveToken
+ * (it's a row-level check, not column-scoped, so map_id is fair game too). */
+export async function moveTokenToMap(tokenId: string, mapId: string, x: number, y: number): Promise<void> {
+  const { error } = await supabase.from('map_tokens').update({ map_id: mapId, x, y }).eq('id', tokenId)
+  if (error) throw error
+}
+
 export async function deleteToken(tokenId: string): Promise<void> {
   const { error } = await supabase.from('map_tokens').delete().eq('id', tokenId)
   if (error) throw error

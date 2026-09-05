@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { Link, useLocation, useOutletContext, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useFullscreen } from '@/hooks/useFullscreen'
 import { useLocations, useNpcs } from '@/hooks/useChronicle'
 import { useParty } from '@/hooks/useParty'
 import {
   createToken,
   deleteToken,
+  getLocationPinPosition,
+  getMapId,
   moveToken,
+  moveTokenToMap,
   setTokenVisibility,
   useLocationMap,
   useMapEdges,
@@ -30,6 +34,7 @@ export function LocationMapPage() {
   const { campaign } = useOutletContext<{ campaign: Campaign }>()
   const { campaignId, locationId } = useParams<{ campaignId: string; locationId: string }>()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const routerLocation = useLocation()
   const centerTokenId = (routerLocation.state as MapNavState | null)?.centerTokenId ?? null
   const isGm = user?.id === campaign.gmId
@@ -44,13 +49,32 @@ export function LocationMapPage() {
   const { data: party } = useParty(campaignId)
   const pushToast = useUiStore((s) => s.pushToast)
 
+  const { ref: fullscreenRef, isFullscreen, toggle: toggleFullscreen } = useFullscreen<HTMLDivElement>()
+
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(centerTokenId)
   const selectedToken = tokens.find((t) => t.id === selectedTokenId) ?? null
 
   const myCharacterIds = new Set(party.filter((c) => c.ownerId === user?.id).map((c) => c.id))
+  const myTokens = tokens.filter((t) => t.refCharacterId != null && myCharacterIds.has(t.refCharacterId))
 
   function canDrag(token: MapToken): boolean {
     return isGm || (token.refCharacterId != null && myCharacterIds.has(token.refCharacterId))
+  }
+
+  // Bring the character's own token back onto the overworld, at this
+  // location's pin, instead of leaving it stranded here once the player
+  // has moved on — the same circle that followed them in follows them out.
+  async function handleReturnToWorldMap() {
+    if (!isGm && myTokens.length > 0 && campaignId && locationId) {
+      const worldMapId = await getMapId(campaignId, null)
+      const pin = worldMapId ? await getLocationPinPosition(worldMapId, locationId) : null
+      if (worldMapId && pin) {
+        await Promise.all(myTokens.map((t) => moveTokenToMap(t.id, worldMapId, pin.x, pin.y))).catch(() =>
+          pushToast("Le pion n'a pas pu revenir sur la carte du monde.", 'error'),
+        )
+      }
+    }
+    navigate(`/campaign/${campaignId}/map`)
   }
 
   async function handleDrop(token: MapToken, x: number, y: number) {
@@ -77,13 +101,13 @@ export function LocationMapPage() {
   }
 
   return (
-    <div>
-      <Link
-        to={`/campaign/${campaignId}/map`}
+    <div ref={fullscreenRef} className={isFullscreen ? 'overflow-auto bg-ink-950 p-4' : ''}>
+      <button
+        onClick={handleReturnToWorldMap}
         className="mb-4 inline-block text-sm text-parchment-200/60 hover:text-parchment-100"
       >
         ← Retour à la carte du monde
-      </Link>
+      </button>
 
       {!location ? (
         <p className="text-parchment-200/60">Lieu introuvable.</p>
@@ -91,13 +115,22 @@ export function LocationMapPage() {
         <>
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-display text-xl text-parchment-100">📍 {location.name}</h2>
-            <span
-              className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
-                isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
-              }`}
-            >
-              {isGm ? 'Vue MJ — éditable' : 'Vue joueur'}
-            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <span
+                className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
+                  isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
+                }`}
+              >
+                {isGm ? 'Vue MJ — éditable' : 'Vue joueur'}
+              </span>
+              <button
+                onClick={toggleFullscreen}
+                title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+                className="rounded-md border border-ink-700 px-2 py-1 text-xs text-parchment-200/60 hover:border-ember-500/50 hover:text-ember-400"
+              >
+                {isFullscreen ? '⤢ Quitter' : '⛶ Plein écran'}
+              </button>
+            </div>
           </div>
           {location.description && <p className="mb-4 text-sm text-parchment-200/60">{location.description}</p>}
 
@@ -152,6 +185,7 @@ export function LocationMapPage() {
                 edges={edges}
                 selectedTokenId={selectedTokenId}
                 centerTokenId={centerTokenId}
+                expanded={isFullscreen}
                 onActivate={(token) => setSelectedTokenId(token.id)}
                 onDeselect={() => setSelectedTokenId(null)}
                 canDrag={canDrag}

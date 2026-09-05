@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useFullscreen } from '@/hooks/useFullscreen'
 import { useLocations, useNpcs } from '@/hooks/useChronicle'
 import { useParty } from '@/hooks/useParty'
 import {
   createEdge,
   createToken,
   deleteToken,
+  getMapId,
+  LOCATION_MAP_ENTRY,
   moveToken,
+  moveTokenToMap,
   setTokenVisibility,
   useBattleMap,
   useMapEdges,
@@ -50,6 +54,8 @@ export function MapPage() {
   const { data: party } = useParty(campaignId)
   const pushToast = useUiStore((s) => s.pushToast)
 
+  const { ref: fullscreenRef, isFullscreen, toggle: toggleFullscreen } = useFullscreen<HTMLDivElement>()
+
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(centerTokenId)
 
   // Path mode: GM clicks tokens in sequence to lay the route between them —
@@ -88,7 +94,7 @@ export function MapPage() {
     }
   }
 
-  function handleActivate(token: MapToken) {
+  async function handleActivate(token: MapToken) {
     if (pathMode && map && campaignId) {
       if (!pathFromId) {
         setPathFromId(token.id)
@@ -108,6 +114,19 @@ export function MapPage() {
       if (!isGm && !isReachableForPlayer(token)) {
         pushToast('Approchez votre personnage de ce lieu pour vous y rendre.', 'info')
         return
+      }
+      // Bring the traveling character's own token along onto the location's
+      // detail map — the same hero circle, not a stray copy left behind on
+      // the world map. Only possible once the GM has actually opened that
+      // location's map; if not, still navigate (shows "waiting on the GM"),
+      // the character just doesn't have a token to place anywhere yet.
+      if (!isGm && myTokens.length > 0) {
+        const destMapId = await getMapId(campaignId!, token.refLocationId)
+        if (destMapId) {
+          await Promise.all(
+            myTokens.map((t) => moveTokenToMap(t.id, destMapId, LOCATION_MAP_ENTRY.x, LOCATION_MAP_ENTRY.y)),
+          ).catch(() => pushToast("Le pion n'a pas pu suivre jusqu'ici.", 'error'))
+        }
       }
       navigate(`/campaign/${campaignId}/map/${token.refLocationId}`)
       return
@@ -142,16 +161,25 @@ export function MapPage() {
   }
 
   return (
-    <div>
+    <div ref={fullscreenRef} className={isFullscreen ? 'overflow-auto bg-ink-950 p-4' : ''}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-xl text-parchment-100">{map.name}</h2>
-        <span
-          className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
-            isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
-          }`}
-        >
-          {isGm ? 'Vue MJ — éditable' : 'Vue joueur'}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
+              isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
+            }`}
+          >
+            {isGm ? 'Vue MJ — éditable' : 'Vue joueur'}
+          </span>
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+            className="rounded-md border border-ink-700 px-2 py-1 text-xs text-parchment-200/60 hover:border-ember-500/50 hover:text-ember-400"
+          >
+            {isFullscreen ? '⤢ Quitter' : '⛶ Plein écran'}
+          </button>
+        </div>
       </div>
 
       {isGm && (
@@ -222,6 +250,7 @@ export function MapPage() {
         selectedTokenId={pathMode ? pathFromId : selectedTokenId}
         centerTokenId={centerTokenId}
         mutedTokenIds={unreachableLocationIds}
+        expanded={isFullscreen}
         onActivate={handleActivate}
         onDeselect={() => setSelectedTokenId(null)}
         canDrag={canDrag}
