@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCampaigns, createCampaign } from '@/hooks/useCampaigns'
 import type { Profile } from '@/hooks/useProfiles'
 import { InvitePicker } from '@/components/InvitePicker'
+import { CAMPAIGN_STATUS_LABEL, CAMPAIGN_STATUS_BADGE_CLASS } from '@/lib/campaignStatus'
 import type { Campaign, RpgSystem } from '@/types/database'
 import { useUiStore } from '@/store/useUiStore'
 
@@ -144,6 +145,11 @@ function CampaignCard({ campaign, isGm, onCopyInvite }: { campaign: Campaign; is
               MJ
             </span>
           )}
+          <span
+            className={`rounded-full border px-1.5 py-0.5 text-[10px] uppercase ${CAMPAIGN_STATUS_BADGE_CLASS[campaign.status]}`}
+          >
+            {CAMPAIGN_STATUS_LABEL[campaign.status]}
+          </span>
         </div>
         <p className="text-xs uppercase tracking-wide text-ember-400">{campaign.system}</p>
         {campaign.description && <p className="mt-2 text-sm text-parchment-200/70">{campaign.description}</p>}

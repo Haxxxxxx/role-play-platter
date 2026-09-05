@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { mapCampaign, type CampaignRow } from '@/lib/mappers'
 import type { Profile } from '@/hooks/useProfiles'
-import type { Campaign, RpgSystem } from '@/types/database'
+import type { Campaign, CampaignStatus, RpgSystem } from '@/types/database'
 
 /** Campaigns where the current user is GM or a player. No explicit filter is
  * needed — the "members can read their campaigns" RLS policy already scopes
@@ -116,6 +116,12 @@ export async function createCampaign(params: {
   }
 
   return campaignId
+}
+
+/** GM-only, backed by the "gm updates their campaign" RLS policy. */
+export async function updateCampaignStatus(campaignId: string, status: CampaignStatus): Promise<void> {
+  const { error } = await supabase.from('campaigns').update({ status }).eq('id', campaignId)
+  if (error) throw error
 }
 
 export interface CampaignMember {

@@ -17,12 +17,15 @@ export interface BaseRow {
   updatedAt: string
 }
 
+export type CampaignStatus = 'setup' | 'active' | 'completed'
+
 export interface Campaign extends BaseRow {
   name: string
   system: RpgSystem
   description: string
   gmId: string
   isProcessingNotes: boolean
+  status: CampaignStatus
 }
 
 export interface AbilityScores {

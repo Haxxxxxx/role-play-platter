@@ -2,6 +2,7 @@ import type {
   AbilityScores,
   BattleMap,
   Campaign,
+  CampaignStatus,
   Character,
   InventoryItem,
   Location,
@@ -24,6 +25,7 @@ export interface CampaignRow {
   description: string
   gm_id: string
   is_processing_notes: boolean
+  status: string
   created_at: string
   updated_at: string
 }
@@ -36,6 +38,7 @@ export function mapCampaign(row: CampaignRow): Campaign {
     description: row.description,
     gmId: row.gm_id,
     isProcessingNotes: row.is_processing_notes,
+    status: row.status as CampaignStatus,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
