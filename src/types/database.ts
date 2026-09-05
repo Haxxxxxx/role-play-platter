@@ -46,6 +46,15 @@ export interface InventoryItem {
   sourceNoteId: string | null
 }
 
+/** A named list rather than a fixed per-system schema — the campaign's RPG
+ * system is a free choice (Chroniques Oubliées, D&D 5e, Homebrew...) and
+ * they don't share a skill list, so this is filled in by hand. */
+export interface Skill {
+  id: string
+  name: string
+  modifier: number
+}
+
 export interface Character extends BaseRow {
   campaignId: string
   name: string
@@ -57,6 +66,7 @@ export interface Character extends BaseRow {
   armorClass: number
   abilityScores: AbilityScores
   inventory: InventoryItem[]
+  skills: Skill[]
   notes: string
   isNpcControlled: boolean
 }

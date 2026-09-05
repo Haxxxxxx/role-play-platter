@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { mapCharacter, type CharacterRow } from '@/lib/mappers'
 import { useSupabaseCollection } from '@/hooks/useSupabaseCollection'
-import type { AbilityScores, InventoryItem } from '@/types/database'
+import type { AbilityScores, InventoryItem, Skill } from '@/types/database'
 
 export function useParty(campaignId: string | undefined) {
   return useSupabaseCollection<CharacterRow, ReturnType<typeof mapCharacter>>({
@@ -13,8 +13,6 @@ export function useParty(campaignId: string | undefined) {
   })
 }
 
-const BLANK_ABILITY_SCORES: AbilityScores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }
-
 export async function createCharacter(params: {
   campaignId: string
   name: string
@@ -22,6 +20,9 @@ export async function createCharacter(params: {
   ownerId: string | null
   classAndLevel: string
   race: string
+  abilityScores: AbilityScores
+  hpMax: number
+  armorClass: number
 }): Promise<string> {
   const { data, error } = await supabase
     .from('characters')
@@ -32,11 +33,12 @@ export async function createCharacter(params: {
       owner_id: params.ownerId,
       class_and_level: params.classAndLevel,
       race: params.race,
-      hp_current: 10,
-      hp_max: 10,
-      armor_class: 10,
-      ability_scores: BLANK_ABILITY_SCORES,
+      hp_current: params.hpMax,
+      hp_max: params.hpMax,
+      armor_class: params.armorClass,
+      ability_scores: params.abilityScores,
       inventory: [] as InventoryItem[],
+      skills: [] as Skill[],
     })
     .select('id')
     .single()
@@ -71,6 +73,20 @@ export async function removeInventoryItem(
   if (error) throw error
 }
 
+export async function toggleItemEquipped(
+  characterId: string,
+  currentInventory: InventoryItem[],
+  itemId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('characters')
+    .update({
+      inventory: currentInventory.map((i) => (i.id === itemId ? { ...i, equipped: !i.equipped } : i)),
+    })
+    .eq('id', characterId)
+  if (error) throw error
+}
+
 export async function updateCharacterHp(
   characterId: string,
   hp: { current: number; max: number },
@@ -78,6 +94,34 @@ export async function updateCharacterHp(
   const { error } = await supabase
     .from('characters')
     .update({ hp_current: hp.current, hp_max: hp.max })
+    .eq('id', characterId)
+  if (error) throw error
+}
+
+export async function updateCharacterArmorClass(characterId: string, armorClass: number): Promise<void> {
+  const { error } = await supabase.from('characters').update({ armor_class: armorClass }).eq('id', characterId)
+  if (error) throw error
+}
+
+/** A named list rather than a fixed per-system schema — see the Skill type
+ * for why. Manual, same as inventory: nothing structures skills from notes. */
+export async function addSkill(
+  characterId: string,
+  currentSkills: Skill[],
+  skill: Omit<Skill, 'id'>,
+): Promise<void> {
+  const newSkill: Skill = { ...skill, id: crypto.randomUUID() }
+  const { error } = await supabase
+    .from('characters')
+    .update({ skills: [...currentSkills, newSkill] })
+    .eq('id', characterId)
+  if (error) throw error
+}
+
+export async function removeSkill(characterId: string, currentSkills: Skill[], skillId: string): Promise<void> {
+  const { error } = await supabase
+    .from('characters')
+    .update({ skills: currentSkills.filter((s) => s.id !== skillId) })
     .eq('id', characterId)
   if (error) throw error
 }

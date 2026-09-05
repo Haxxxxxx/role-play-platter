@@ -12,6 +12,7 @@ import type {
   Quest,
   RpgSystem,
   SessionNote,
+  Skill,
   TimelineEvent,
 } from '@/types/database'
 
@@ -57,6 +58,7 @@ export interface CharacterRow {
   armor_class: number
   ability_scores: AbilityScores
   inventory: InventoryItem[]
+  skills: Skill[]
   notes: string
   is_npc_controlled: boolean
   created_at: string
@@ -76,6 +78,7 @@ export function mapCharacter(row: CharacterRow): Character {
     armorClass: row.armor_class,
     abilityScores: row.ability_scores,
     inventory: row.inventory,
+    skills: row.skills ?? [],
     notes: row.notes,
     isNpcControlled: row.is_npc_controlled,
     createdAt: row.created_at,
