@@ -138,3 +138,21 @@ export async function removeSkill(characterId: string, skillId: string): Promise
     .eq('id', characterId)
   if (error) throw error
 }
+
+/** "Add all the system's skills at once" — skips (by name, case-insensitive)
+ * any the character already has, so clicking it again after adding a few by
+ * hand doesn't duplicate them. */
+export async function addSkillsBulk(characterId: string, newSkills: { name: string }[]): Promise<void> {
+  const { skills } = await readCharacterField(characterId, ['skills'])
+  const existing = skills as Skill[]
+  const existingNames = new Set(existing.map((s) => s.name.trim().toLowerCase()))
+  const toAdd = newSkills
+    .filter((s) => !existingNames.has(s.name.trim().toLowerCase()))
+    .map((s) => ({ id: crypto.randomUUID(), name: s.name, modifier: 0 }))
+  if (toAdd.length === 0) return
+  const { error } = await supabase
+    .from('characters')
+    .update({ skills: [...existing, ...toAdd] })
+    .eq('id', characterId)
+  if (error) throw error
+}

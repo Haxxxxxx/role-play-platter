@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import {
   addInventoryItem,
   addSkill,
+  addSkillsBulk,
   adjustCharacterArmorClass,
   adjustCharacterHp,
   createCharacter,
@@ -15,6 +16,7 @@ import {
 } from '@/hooks/useParty'
 import { findTokenLocation } from '@/hooks/useBattleMap'
 import { useCampaignMembers, inviteMemberToCampaign, removeCampaignMember, type CampaignMember } from '@/hooks/useCampaigns'
+import { useSystemReference, generateSystemReference, type SystemReferenceState } from '@/hooks/useSystemReference'
 import { InvitePicker } from '@/components/InvitePicker'
 import type { Profile } from '@/hooks/useProfiles'
 import { useUiStore } from '@/store/useUiStore'
@@ -29,6 +31,7 @@ export function PartyPage() {
   const { campaign } = useOutletContext<{ campaign: Campaign }>()
   const { user } = useAuth()
   const { data: party, loading } = useParty(campaignId)
+  const { reference } = useSystemReference(campaignId)
   const [showForm, setShowForm] = useState(false)
   const navigate = useNavigate()
   const pushToast = useUiStore((s) => s.pushToast)
@@ -48,6 +51,7 @@ export function PartyPage() {
   return (
     <div>
       {isGm && campaignId && <RosterSection campaignId={campaignId} gmId={campaign.gmId} />}
+      {isGm && campaignId && <SystemReferenceSection campaignId={campaignId} reference={reference} />}
 
       <div className="mb-6 flex items-center justify-between">
         <h2 className="font-display text-xl text-parchment-100">Groupe</h2>
@@ -63,6 +67,7 @@ export function PartyPage() {
         <NewCharacterForm
           campaignId={campaignId}
           ownerId={user?.id ?? null}
+          reference={reference}
           onDone={() => setShowForm(false)}
         />
       )}
@@ -78,6 +83,7 @@ export function PartyPage() {
             key={character.id}
             character={character}
             canEdit={isGm || character.ownerId === user?.id}
+            reference={reference}
             onOpenOnMap={() => openOnMap(character)}
           />
         ))}
@@ -157,6 +163,86 @@ function RosterSection({ campaignId, gmId }: { campaignId: string; gmId: string 
   )
 }
 
+/**
+ * GM-only, one call per campaign (cached in system_reference, re-run to
+ * regenerate): asks Gemini for a genre-appropriate class/skill list for
+ * whatever system the GM named, so character creation isn't a blank page.
+ * Original content, not a transcription of a rulebook — see the system
+ * instruction in generate-system-reference.ts.
+ */
+function SystemReferenceSection({
+  campaignId,
+  reference,
+}: {
+  campaignId: string
+  reference: SystemReferenceState | null
+}) {
+  const pushToast = useUiStore((s) => s.pushToast)
+  const [expanded, setExpanded] = useState(false)
+
+  const mutation = useMutation({
+    mutationFn: () => generateSystemReference(campaignId),
+    onSuccess: () => pushToast('Référence du système générée.', 'success'),
+    onError: (error: Error) => pushToast(error.message, 'error'),
+  })
+
+  return (
+    <section className="mb-8 rounded-xl border border-ink-700 bg-ink-900 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="font-display text-lg text-parchment-100">Référence du système</h3>
+          <p className="text-xs text-parchment-200/50">
+            {reference
+              ? `${reference.classes.length} classes, ${reference.skills.length} compétences — proposées par Gemini, pas une copie du livre.`
+              : "Aucune référence encore — génère des classes et compétences adaptées à ton système pour accélérer la création de personnage."}
+          </p>
+        </div>
+        <button
+          onClick={() => mutation.mutate()}
+          disabled={mutation.isPending}
+          className="shrink-0 whitespace-nowrap rounded-md border border-arcane-500/50 px-3 py-1.5 text-sm text-arcane-500 hover:bg-arcane-500/10 disabled:opacity-50"
+        >
+          {mutation.isPending ? 'Génération…' : reference ? '🔄 Régénérer' : '🧠 Générer'}
+        </button>
+      </div>
+
+      {reference && (
+        <button
+          onClick={() => setExpanded((s) => !s)}
+          className="mt-2 text-xs text-parchment-200/50 hover:text-ember-400"
+        >
+          {expanded ? 'Masquer le détail' : 'Voir le détail'}
+        </button>
+      )}
+
+      {reference && expanded && (
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div>
+            <h4 className="mb-1.5 text-xs uppercase tracking-wide text-parchment-200/50">Classes</h4>
+            <ul className="flex flex-col gap-1 text-sm text-parchment-200/70">
+              {reference.classes.map((c) => (
+                <li key={c.name}>
+                  <strong className="text-parchment-100">{c.name}</strong> — {c.description}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h4 className="mb-1.5 text-xs uppercase tracking-wide text-parchment-200/50">Compétences</h4>
+            <ul className="flex flex-col gap-1 text-sm text-parchment-200/70">
+              {reference.skills.map((s) => (
+                <li key={s.name}>
+                  <strong className="text-parchment-100">{s.name}</strong> — {s.description}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function RosterRow({ member, canRemove, onRemove }: { member: CampaignMember; canRemove: boolean; onRemove: () => void }) {
   const label = member.profile?.displayName ?? member.profile?.email ?? 'Joueur sans profil'
   return (
@@ -186,10 +272,12 @@ const BLANK_ABILITY_SCORES: AbilityScores = { str: 10, dex: 10, con: 10, int: 10
 function NewCharacterForm({
   campaignId,
   ownerId,
+  reference,
   onDone,
 }: {
   campaignId: string
   ownerId: string | null
+  reference: SystemReferenceState | null
   onDone: () => void
 }) {
   const [name, setName] = useState('')
@@ -232,12 +320,29 @@ function NewCharacterForm({
         placeholder="Nom du joueur"
         className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
       />
-      <input
-        value={classAndLevel}
-        onChange={(e) => setClassAndLevel(e.target.value)}
-        placeholder="Classe et niveau (ex. Roublard 3)"
-        className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
-      />
+      <div>
+        <input
+          value={classAndLevel}
+          onChange={(e) => setClassAndLevel(e.target.value)}
+          placeholder="Classe et niveau (ex. Roublard 3)"
+          className="w-full rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
+        />
+        {reference && reference.classes.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {reference.classes.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                title={c.description}
+                onClick={() => setClassAndLevel(`${c.name} `)}
+                className="rounded-full border border-ink-700 px-2 py-0.5 text-xs text-parchment-200/60 hover:border-arcane-500/50 hover:text-arcane-500"
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <input
         value={race}
         onChange={(e) => setRace(e.target.value)}
@@ -303,10 +408,12 @@ function NewCharacterForm({
 function CharacterSheet({
   character,
   canEdit,
+  reference,
   onOpenOnMap,
 }: {
   character: Character
   canEdit: boolean
+  reference: SystemReferenceState | null
   onOpenOnMap: () => void
 }) {
   const pushToast = useUiStore((s) => s.pushToast)
@@ -386,7 +493,7 @@ function CharacterSheet({
       </div>
 
       <InventorySection character={character} canEdit={canEdit} />
-      <SkillsSection character={character} canEdit={canEdit} />
+      <SkillsSection character={character} canEdit={canEdit} reference={reference} />
 
       <button
         onClick={onOpenOnMap}
@@ -500,7 +607,15 @@ function InventorySection({ character, canEdit }: { character: Character; canEdi
   )
 }
 
-function SkillsSection({ character, canEdit }: { character: Character; canEdit: boolean }) {
+function SkillsSection({
+  character,
+  canEdit,
+  reference,
+}: {
+  character: Character
+  canEdit: boolean
+  reference: SystemReferenceState | null
+}) {
   const [showForm, setShowForm] = useState(false)
   const [skillName, setSkillName] = useState('')
   const [modifier, setModifier] = useState(0)
@@ -519,6 +634,10 @@ function SkillsSection({ character, canEdit }: { character: Character; canEdit: 
     mutationFn: (skillId: string) => removeSkill(character.id, skillId),
     onError: () => pushToast('Impossible de retirer cette compétence.', 'error'),
   })
+  const bulkAddMutation = useMutation({
+    mutationFn: () => addSkillsBulk(character.id, reference!.skills),
+    onError: () => pushToast("Impossible d'ajouter les compétences du système.", 'error'),
+  })
 
   return (
     <div className="mt-4">
@@ -530,6 +649,18 @@ function SkillsSection({ character, canEdit }: { character: Character; canEdit: 
           </button>
         )}
       </div>
+
+      {canEdit && reference && reference.skills.length > 0 && (
+        <button
+          onClick={() => bulkAddMutation.mutate()}
+          disabled={bulkAddMutation.isPending}
+          className="mb-2 text-xs text-arcane-500 hover:text-arcane-500/80 disabled:opacity-50"
+        >
+          {bulkAddMutation.isPending
+            ? 'Ajout…'
+            : `+ Ajouter les compétences du système (${reference.skills.length})`}
+        </button>
+      )}
 
       {character.skills.length === 0 && !showForm ? (
         <p className="text-sm text-parchment-200/40">Aucune compétence renseignée.</p>
