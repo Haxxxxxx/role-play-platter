@@ -183,3 +183,27 @@ export async function uploadCharacterPortrait(characterId: string, file: File): 
   if (error) throw error
   return data.publicUrl
 }
+
+/**
+ * AI-generated portrait: the server builds a visual brief from the
+ * character + campaign system (free text model) then paints it (image
+ * model, billing-only) and writes portrait_url. The character prop updates
+ * live off that write, so nothing to return-and-set here beyond surfacing
+ * an error.
+ */
+export async function generateCharacterPortrait(characterId: string): Promise<void> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) throw new Error('Not signed in.')
+
+  const response = await fetch('/api/generate-portrait', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ characterId }),
+  })
+  const body = (await response.json()) as { portraitUrl: string } | { error: string }
+  if (!response.ok || 'error' in body) {
+    throw new Error('error' in body ? body.error : 'La génération du portrait a échoué.')
+  }
+}

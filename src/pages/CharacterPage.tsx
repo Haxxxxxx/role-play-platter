@@ -8,6 +8,7 @@ import {
   addSkillsBulk,
   adjustCharacterArmorClass,
   adjustCharacterHp,
+  generateCharacterPortrait,
   removeInventoryItem,
   removeSkill,
   toggleItemEquipped,
@@ -176,42 +177,64 @@ function PortraitPanel({
     },
   })
 
+  const generateMutation = useMutation({
+    mutationFn: () => generateCharacterPortrait(character.id),
+    onError: (error: Error) => pushToast(error.message || 'La génération a échoué.', 'error'),
+  })
+
   function handleFile(file: File) {
     setPreviewUrl(URL.createObjectURL(file)) // instant feedback while it uploads
     uploadMutation.mutate(file)
   }
 
+  const busy = uploadMutation.isPending || generateMutation.isPending
   const shownUrl = previewUrl ?? character.portraitUrl
 
   return (
-    <div className="relative mx-auto h-48 w-48 shrink-0 overflow-hidden rounded-xl border border-ink-700 bg-ink-800 sm:mx-0">
-      {shownUrl ? (
-        <img src={shownUrl} alt={character.name} className="h-full w-full object-cover" />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-5xl text-parchment-200/20">🧑</div>
-      )}
-      {canEdit && (
-        <>
+    <div className="mx-auto shrink-0 sm:mx-0">
+      <div className="relative h-48 w-48 overflow-hidden rounded-xl border border-ink-700 bg-ink-800">
+        {shownUrl ? (
+          <img src={shownUrl} alt={character.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-5xl text-parchment-200/20">🧑</div>
+        )}
+        {generateMutation.isPending && (
+          <div className="absolute inset-0 flex items-center justify-center bg-ink-950/70 text-xs text-parchment-200/80">
+            Génération…
+          </div>
+        )}
+        {canEdit && !generateMutation.isPending && (
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploadMutation.isPending}
+            disabled={busy}
             className="absolute inset-x-0 bottom-0 bg-ink-950/85 py-1.5 text-xs text-parchment-200/80 backdrop-blur-sm hover:text-ember-400 disabled:opacity-50"
           >
             {uploadMutation.isPending ? 'Envoi…' : '📷 Changer l\'image'}
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) handleFile(file)
-              e.target.value = ''
-            }}
-          />
-        </>
+        )}
+      </div>
+
+      {canEdit && (
+        <button
+          onClick={() => generateMutation.mutate()}
+          disabled={busy}
+          className="mt-2 w-48 rounded-md border border-arcane-500/50 py-1.5 text-xs text-arcane-500 hover:bg-arcane-500/10 disabled:opacity-50"
+        >
+          {generateMutation.isPending ? 'Génération…' : '✨ Générer (IA)'}
+        </button>
       )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleFile(file)
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 }
