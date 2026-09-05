@@ -143,10 +143,10 @@ export function MapPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-xl text-parchment-100">{map.name}</h2>
         <span
-          className={`rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
+          className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
             isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
           }`}
         >

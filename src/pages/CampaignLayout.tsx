@@ -33,31 +33,31 @@ export function CampaignLayout() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-ink-700 bg-ink-900/60 px-6 py-4">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl text-parchment-100">{campaign.name}</h1>
               <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                className={`shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
                   isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
                 }`}
               >
                 {isGm ? 'MJ' : 'Joueur'}
               </span>
               <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${CAMPAIGN_STATUS_BADGE_CLASS[campaign.status]}`}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${CAMPAIGN_STATUS_BADGE_CLASS[campaign.status]}`}
               >
                 {CAMPAIGN_STATUS_LABEL[campaign.status]}
               </span>
             </div>
             <p className="text-xs uppercase tracking-wide text-ember-400">{campaign.system}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
             {isGm && campaign.status === 'setup' && (
               <button
                 onClick={() => statusMutation.mutate('active')}
                 disabled={statusMutation.isPending}
-                className="rounded-md bg-ember-500 px-3 py-1.5 text-sm font-medium text-ink-950 hover:bg-ember-400 disabled:opacity-50"
+                className="shrink-0 whitespace-nowrap rounded-md bg-ember-500 px-3 py-1.5 text-sm font-medium text-ink-950 hover:bg-ember-400 disabled:opacity-50"
               >
                 ▶ Démarrer la campagne
               </button>
@@ -66,7 +66,7 @@ export function CampaignLayout() {
               <button
                 onClick={() => statusMutation.mutate('completed')}
                 disabled={statusMutation.isPending}
-                className="rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800 disabled:opacity-50"
+                className="shrink-0 whitespace-nowrap rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800 disabled:opacity-50"
               >
                 ✓ Terminer la campagne
               </button>
@@ -75,12 +75,12 @@ export function CampaignLayout() {
               <button
                 onClick={() => statusMutation.mutate('active')}
                 disabled={statusMutation.isPending}
-                className="text-xs text-parchment-200/40 hover:text-parchment-100 disabled:opacity-50"
+                className="shrink-0 whitespace-nowrap text-xs text-parchment-200/40 hover:text-parchment-100 disabled:opacity-50"
               >
                 ↺ Reprendre la campagne
               </button>
             )}
-            <NavLink to="/" className="text-sm text-parchment-200/60 hover:text-parchment-100">
+            <NavLink to="/" className="shrink-0 whitespace-nowrap text-sm text-parchment-200/60 hover:text-parchment-100">
               ← Toutes les campagnes
             </NavLink>
           </div>

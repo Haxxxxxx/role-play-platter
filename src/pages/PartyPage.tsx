@@ -141,16 +141,20 @@ function RosterSection({ campaignId, gmId }: { campaignId: string; gmId: string 
 function RosterRow({ member, canRemove, onRemove }: { member: CampaignMember; canRemove: boolean; onRemove: () => void }) {
   const label = member.profile?.displayName ?? member.profile?.email ?? 'Joueur sans profil'
   return (
-    <li className="flex items-center justify-between rounded-md bg-ink-800 px-3 py-1.5 text-sm">
-      <span className="flex items-center gap-2">
-        {member.profile?.avatarUrl && <img src={member.profile.avatarUrl} alt="" className="h-5 w-5 rounded-full" />}
-        <span className="text-parchment-100">{label}</span>
+    <li className="flex items-center justify-between gap-2 rounded-md bg-ink-800 px-3 py-1.5 text-sm">
+      <span className="flex min-w-0 items-center gap-2">
+        {member.profile?.avatarUrl && (
+          <img src={member.profile.avatarUrl} alt="" className="h-5 w-5 shrink-0 rounded-full" />
+        )}
+        <span className="truncate text-parchment-100">{label}</span>
         {member.role === 'gm' && (
-          <span className="rounded-full border border-ember-500/40 px-1.5 py-0.5 text-[10px] uppercase text-ember-400">MJ</span>
+          <span className="shrink-0 whitespace-nowrap rounded-full border border-ember-500/40 px-1.5 py-0.5 text-[10px] uppercase text-ember-400">
+            MJ
+          </span>
         )}
       </span>
       {canRemove && (
-        <button onClick={onRemove} className="text-xs text-parchment-200/40 hover:text-red-400">
+        <button onClick={onRemove} className="shrink-0 whitespace-nowrap text-xs text-parchment-200/40 hover:text-red-400">
           Retirer
         </button>
       )}

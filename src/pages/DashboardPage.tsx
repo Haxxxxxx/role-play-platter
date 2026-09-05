@@ -59,7 +59,7 @@ export function DashboardPage() {
         >
           👤 Profil
           {user?.is_anonymous && (
-            <span className="rounded-full border border-arcane-500/50 px-1.5 py-0.5 text-[10px] uppercase text-arcane-500">
+            <span className="shrink-0 whitespace-nowrap rounded-full border border-arcane-500/50 px-1.5 py-0.5 text-[10px] uppercase text-arcane-500">
               Invité
             </span>
           )}
@@ -138,15 +138,15 @@ function CampaignCard({ campaign, isGm, onCopyInvite }: { campaign: Campaign; is
   return (
     <div className="rounded-xl border border-ink-700 bg-ink-900 p-4 transition hover:border-ember-500/50">
       <Link to={`/campaign/${campaign.id}`} className="block">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-display text-lg text-parchment-100">{campaign.name}</h3>
           {isGm && (
-            <span className="rounded-full border border-ember-500/40 px-1.5 py-0.5 text-[10px] uppercase text-ember-400">
+            <span className="shrink-0 whitespace-nowrap rounded-full border border-ember-500/40 px-1.5 py-0.5 text-[10px] uppercase text-ember-400">
               MJ
             </span>
           )}
           <span
-            className={`rounded-full border px-1.5 py-0.5 text-[10px] uppercase ${CAMPAIGN_STATUS_BADGE_CLASS[campaign.status]}`}
+            className={`shrink-0 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[10px] uppercase ${CAMPAIGN_STATUS_BADGE_CLASS[campaign.status]}`}
           >
             {CAMPAIGN_STATUS_LABEL[campaign.status]}
           </span>
