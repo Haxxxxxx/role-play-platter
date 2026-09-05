@@ -5,12 +5,12 @@ import { useAuth } from '@/hooks/useAuth'
 import {
   addInventoryItem,
   addSkill,
+  adjustCharacterArmorClass,
+  adjustCharacterHp,
   createCharacter,
   removeInventoryItem,
   removeSkill,
   toggleItemEquipped,
-  updateCharacterArmorClass,
-  updateCharacterHp,
   useParty,
 } from '@/hooks/useParty'
 import { findTokenLocation } from '@/hooks/useBattleMap'
@@ -311,24 +311,17 @@ function CharacterSheet({
 }) {
   const pushToast = useUiStore((s) => s.pushToast)
 
+  // Both adjust by a delta and clamp server-side against a freshly read
+  // value rather than one computed from this render's (possibly stale)
+  // character prop — see the comment in useParty.ts for why that matters.
   const hpMutation = useMutation({
-    mutationFn: (current: number) => updateCharacterHp(character.id, { current, max: character.hp.max }),
+    mutationFn: (delta: number) => adjustCharacterHp(character.id, delta),
     onError: () => pushToast('Impossible de modifier les PV.', 'error'),
   })
   const acMutation = useMutation({
-    mutationFn: (value: number) => updateCharacterArmorClass(character.id, value),
+    mutationFn: (delta: number) => adjustCharacterArmorClass(character.id, delta),
     onError: () => pushToast('Impossible de modifier la CA.', 'error'),
   })
-
-  function adjustHp(delta: number) {
-    const next = Math.max(0, Math.min(character.hp.max, character.hp.current + delta))
-    if (next !== character.hp.current) hpMutation.mutate(next)
-  }
-
-  function adjustAc(delta: number) {
-    const next = Math.max(0, character.armorClass + delta)
-    if (next !== character.armorClass) acMutation.mutate(next)
-  }
 
   return (
     <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
@@ -344,7 +337,7 @@ function CharacterSheet({
           PV
           {canEdit && (
             <button
-              onClick={() => adjustHp(-1)}
+              onClick={() => hpMutation.mutate(-1)}
               className="rounded border border-ink-700 px-1.5 text-parchment-200/60 hover:border-red-500/50 hover:text-red-400"
             >
               −
@@ -355,7 +348,7 @@ function CharacterSheet({
           </strong>
           {canEdit && (
             <button
-              onClick={() => adjustHp(1)}
+              onClick={() => hpMutation.mutate(1)}
               className="rounded border border-ink-700 px-1.5 text-parchment-200/60 hover:border-emerald-500/50 hover:text-emerald-400"
             >
               +
@@ -366,7 +359,7 @@ function CharacterSheet({
           CA
           {canEdit && (
             <button
-              onClick={() => adjustAc(-1)}
+              onClick={() => acMutation.mutate(-1)}
               className="rounded border border-ink-700 px-1.5 text-parchment-200/60 hover:border-red-500/50 hover:text-red-400"
             >
               −
@@ -375,7 +368,7 @@ function CharacterSheet({
           <strong className="text-parchment-100">{character.armorClass}</strong>
           {canEdit && (
             <button
-              onClick={() => adjustAc(1)}
+              onClick={() => acMutation.mutate(1)}
               className="rounded border border-ink-700 px-1.5 text-parchment-200/60 hover:border-emerald-500/50 hover:text-emerald-400"
             >
               +
@@ -412,7 +405,7 @@ function InventorySection({ character, canEdit }: { character: Character; canEdi
   const pushToast = useUiStore((s) => s.pushToast)
 
   const addMutation = useMutation({
-    mutationFn: (item: Omit<InventoryItem, 'id'>) => addInventoryItem(character.id, character.inventory, item),
+    mutationFn: (item: Omit<InventoryItem, 'id'>) => addInventoryItem(character.id, item),
     onSuccess: () => {
       setItemName('')
       setQuantity(1)
@@ -421,11 +414,11 @@ function InventorySection({ character, canEdit }: { character: Character; canEdi
     onError: () => pushToast("Impossible d'ajouter cet objet.", 'error'),
   })
   const removeMutation = useMutation({
-    mutationFn: (itemId: string) => removeInventoryItem(character.id, character.inventory, itemId),
+    mutationFn: (itemId: string) => removeInventoryItem(character.id, itemId),
     onError: () => pushToast('Impossible de retirer cet objet.', 'error'),
   })
   const toggleMutation = useMutation({
-    mutationFn: (itemId: string) => toggleItemEquipped(character.id, character.inventory, itemId),
+    mutationFn: (itemId: string) => toggleItemEquipped(character.id, itemId),
     onError: () => pushToast('Action impossible.', 'error'),
   })
 
@@ -514,7 +507,7 @@ function SkillsSection({ character, canEdit }: { character: Character; canEdit: 
   const pushToast = useUiStore((s) => s.pushToast)
 
   const addMutation = useMutation({
-    mutationFn: (skill: Omit<Skill, 'id'>) => addSkill(character.id, character.skills, skill),
+    mutationFn: (skill: Omit<Skill, 'id'>) => addSkill(character.id, skill),
     onSuccess: () => {
       setSkillName('')
       setModifier(0)
@@ -523,7 +516,7 @@ function SkillsSection({ character, canEdit }: { character: Character; canEdit: 
     onError: () => pushToast("Impossible d'ajouter cette compétence.", 'error'),
   })
   const removeMutation = useMutation({
-    mutationFn: (skillId: string) => removeSkill(character.id, character.skills, skillId),
+    mutationFn: (skillId: string) => removeSkill(character.id, skillId),
     onError: () => pushToast('Impossible de retirer cette compétence.', 'error'),
   })
 
