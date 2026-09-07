@@ -7,7 +7,7 @@ import type { Plugin, ViteDevServer } from 'vite'
 // `npm run dev` — in production Vercel's own routing serves api/*.ts
 // directly, this file is never involved. Add a new endpoint's filename here
 // (no extension) to make it reachable locally too.
-const API_ROUTES = ['structure-gm-notes', 'gm-recommendations', 'generate-system-reference', 'generate-portrait']
+const API_ROUTES = ['structure-gm-notes', 'gm-recommendations', 'generate-system-reference', 'generate-portrait', 'generate-scene']
 
 interface MinimalVercelResponse {
   status(code: number): MinimalVercelResponse

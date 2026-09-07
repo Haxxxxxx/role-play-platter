@@ -164,3 +164,17 @@ export interface MapEdge {
   toTokenId: string
   createdAt: string
 }
+
+/** One scene of a GM's prepped scenario — ordered, GM-only. read_aloud is
+ * the boxed text meant to be read at the table; gmNotes is secret prep. */
+export interface Scene extends BaseRow {
+  campaignId: string
+  title: string
+  order: number
+  readAloud: string
+  gmNotes: string
+  encounter: string
+  npcIds: string[]
+  locationIds: string[]
+  done: boolean
+}

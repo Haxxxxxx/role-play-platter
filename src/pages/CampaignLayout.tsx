@@ -8,6 +8,7 @@ import type { CampaignStatus } from '@/types/database'
 
 const ALL_TABS = [
   { to: '', label: 'Chronique', end: true, gmOnly: false },
+  { to: 'scenario', label: 'Scénario', end: false, gmOnly: true },
   { to: 'notes', label: 'Notes du MJ', end: false, gmOnly: true },
   { to: 'party', label: 'Groupe', end: false, gmOnly: false },
   { to: 'map', label: 'Carte', end: false, gmOnly: false },

@@ -11,6 +11,7 @@ import type {
   Npc,
   Quest,
   RpgSystem,
+  Scene,
   SessionNote,
   Skill,
   TimelineEvent,
@@ -303,5 +304,37 @@ export function mapMapEdge(row: MapEdgeRow): MapEdge {
     fromTokenId: row.from_token_id,
     toTokenId: row.to_token_id,
     createdAt: row.created_at,
+  }
+}
+
+export interface SceneRow {
+  id: string
+  campaign_id: string
+  title: string
+  order: number
+  read_aloud: string
+  gm_notes: string
+  encounter: string
+  npc_ids: string[]
+  location_ids: string[]
+  done: boolean
+  created_at: string
+  updated_at: string
+}
+
+export function mapScene(row: SceneRow): Scene {
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    title: row.title,
+    order: row.order,
+    readAloud: row.read_aloud,
+    gmNotes: row.gm_notes,
+    encounter: row.encounter,
+    npcIds: row.npc_ids ?? [],
+    locationIds: row.location_ids ?? [],
+    done: row.done,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
