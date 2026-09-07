@@ -197,11 +197,27 @@ export async function generateCharacterPortrait(characterId: string): Promise<vo
   } = await supabase.auth.getSession()
   if (!session) throw new Error('Not signed in.')
 
-  const response = await fetch('/api/generate-portrait', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-    body: JSON.stringify({ characterId }),
-  })
+  // Image generation genuinely takes a while; cap it so a hung request
+  // surfaces as a clear error instead of an indefinite spinner.
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 90_000)
+  let response: Response
+  try {
+    response = await fetch('/api/generate-portrait', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ characterId }),
+      signal: controller.signal,
+    })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('La génération a pris trop de temps — réessayez.', { cause: err })
+    }
+    throw err
+  } finally {
+    clearTimeout(timeout)
+  }
+
   const body = (await response.json()) as { portraitUrl: string } | { error: string }
   if (!response.ok || 'error' in body) {
     throw new Error('error' in body ? body.error : 'La génération du portrait a échoué.')

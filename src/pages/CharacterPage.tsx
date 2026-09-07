@@ -199,8 +199,9 @@ function PortraitPanel({
           <div className="flex h-full w-full items-center justify-center text-5xl text-parchment-200/20">🧑</div>
         )}
         {generateMutation.isPending && (
-          <div className="absolute inset-0 flex items-center justify-center bg-ink-950/70 text-xs text-parchment-200/80">
-            Génération…
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ink-950/75 px-3 text-center text-xs text-parchment-200/80">
+            <span>Génération…</span>
+            <span className="text-[10px] text-parchment-200/50">jusqu'à une minute</span>
           </div>
         )}
         {canEdit && !generateMutation.isPending && (

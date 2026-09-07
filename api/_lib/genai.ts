@@ -48,19 +48,6 @@ export async function generateForcedFunctionCall(params: {
   return call.args
 }
 
-/** Plain freeform text generation on the free-tier text model. */
-export async function generateText(params: { systemInstruction: string; prompt: string }): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
-    config: { systemInstruction: params.systemInstruction },
-  })
-  const text = response.text?.trim()
-  if (!text) throw new Error('Gemini returned no text.')
-  return text
-}
-
 /**
  * One image out of the image model. Billing-only (see GEMINI_IMAGE_MODEL) —
  * the caller is expected to catch the quota error and explain it. Returns

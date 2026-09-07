@@ -1,15 +1,19 @@
 import { randomUUID } from 'node:crypto'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
-import { generateImage, generateText } from './_lib/genai.js'
+import { generateImage } from './_lib/genai.js'
 
 const supabaseAdmin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 /**
- * Two-step portrait generation: the free text model first turns the sparse
- * character fields + the campaign's system into an evocative visual brief
- * in that world's flavor, then the (billing-only) image model paints it.
- * The result is uploaded to the same `portraits` bucket a manual upload
+ * Single call to the (billing-only) image model, with a prompt built
+ * straight from the campaign's system + the character's fields. An earlier
+ * version had the free text model write an "evocative brief" first, but on
+ * the free tier that step alone queued ~60s before the request even
+ * reached the image model — long enough to read as frozen, and pure waste
+ * when the image call was about to 402 for lack of billing anyway. A plain
+ * templated prompt covers "fits the game's world" well enough and fails
+ * fast. The result is uploaded to the same `portraits` bucket a manual upload
  * uses. Auth: whoever can already edit the character (its owner or the
  * campaign's GM) — the same rule the storage RLS enforces, checked here
  * because this route writes with the service-role key.
@@ -62,31 +66,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const systemDescriptor =
+    const setting =
       campaign.system === 'Custom / Homebrew' && campaign.description
-        ? `Custom / Homebrew — the GM describes the setting as: ${campaign.description}`
-        : campaign.system
+        ? campaign.description
+        : `a ${campaign.system} tabletop RPG`
+    const descriptors = [character.class_and_level, character.race].filter(Boolean).join(', ')
 
-    // Step 1 — free text model: an original visual brief in the system's flavor.
-    const brief = await generateText({
-      systemInstruction:
-        'You write a single vivid paragraph describing how one tabletop RPG character looks, for an ' +
-        'illustrator. Ground it in the genre and tone of the named system, but invent freely — never ' +
-        'reference a copyrighted setting, named IP, or a real person. Describe face, build, hair, ' +
-        'expression, clothing/armor, and one signature item. Concrete and visual, no lore or backstory, ' +
-        'no more than 90 words.',
-      prompt:
-        `System: ${systemDescriptor}\n` +
-        `Character: ${character.name}\n` +
-        `Class & level: ${character.class_and_level || '(unspecified)'}\n` +
-        `People / race: ${character.race || '(unspecified)'}`,
-    })
+    const prompt =
+      `Original character portrait for ${setting}. ` +
+      `${character.name}${descriptors ? `, ${descriptors}` : ''}. ` +
+      `Chest-up portrait, painterly fantasy illustration, dramatic lighting, plain muted background. ` +
+      `In the genre and tone of that system, but do not depict any copyrighted character, named IP, ` +
+      `or real person. No text, no watermark, no border.`
 
-    // Step 2 — image model (billing-only).
-    const { bytes, mimeType } = await generateImage(
-      `${brief}\n\nChest-up character portrait, painterly fantasy illustration, dramatic lighting, ` +
-        `plain muted background, no text, no watermark, no border.`,
-    )
+    const { bytes, mimeType } = await generateImage(prompt)
 
     const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : 'jpg'
     const path = `${characterId}/${randomUUID()}.${ext}`
