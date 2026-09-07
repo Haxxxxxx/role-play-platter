@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { postToApi } from '@/lib/apiFetch'
 import { useSupabaseCollection } from '@/hooks/useSupabaseCollection'
 
 export interface ReferenceEntry {
@@ -49,20 +49,5 @@ export function useSystemReference(campaignId: string | undefined) {
  * that client-side beyond not showing the button to a player.
  */
 export async function generateSystemReference(campaignId: string): Promise<SystemReferenceState> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  if (!session) throw new Error('Not signed in.')
-
-  const response = await fetch('/api/generate-system-reference', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-    body: JSON.stringify({ campaignId }),
-  })
-
-  const body = (await response.json()) as SystemReferenceState | { error: string }
-  if (!response.ok || 'error' in body) {
-    throw new Error('error' in body ? body.error : 'Failed to generate the system reference.')
-  }
-  return body
+  return postToApi<SystemReferenceState>('/api/generate-system-reference', { campaignId })
 }

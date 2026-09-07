@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { postToApi } from '@/lib/apiFetch'
 import type { SessionNoteKind } from '@/types/database'
 
 interface StructureNotesResponse {
@@ -36,20 +37,8 @@ export async function submitGmNote(params: {
     .single()
   if (insertError) throw insertError
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  if (!session) throw new Error('Not signed in.')
-
-  const response = await fetch('/api/structure-gm-notes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-    body: JSON.stringify({ campaignId: params.campaignId, noteId: (note as { id: string }).id }),
+  return postToApi<StructureNotesResponse>('/api/structure-gm-notes', {
+    campaignId: params.campaignId,
+    noteId: (note as { id: string }).id,
   })
-
-  const body = (await response.json()) as StructureNotesResponse | { error: string }
-  if (!response.ok || 'error' in body) {
-    throw new Error('error' in body ? body.error : 'Failed to process note.')
-  }
-  return body
 }

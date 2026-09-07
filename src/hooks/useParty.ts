@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { postToApi } from '@/lib/apiFetch'
 import { mapCharacter, type CharacterRow } from '@/lib/mappers'
 import { useSupabaseCollection } from '@/hooks/useSupabaseCollection'
 import type { AbilityScores, InventoryItem, Skill } from '@/types/database'
@@ -185,41 +186,11 @@ export async function uploadCharacterPortrait(characterId: string, file: File): 
 }
 
 /**
- * AI-generated portrait: the server builds a visual brief from the
- * character + campaign system (free text model) then paints it (image
- * model, billing-only) and writes portrait_url. The character prop updates
- * live off that write, so nothing to return-and-set here beyond surfacing
- * an error.
+ * AI-generated portrait: the server paints the image (billing-only model)
+ * from a prompt built off the character + campaign system, then writes
+ * portrait_url. The character prop updates live off that write, so nothing
+ * to return-and-set here beyond surfacing an error.
  */
 export async function generateCharacterPortrait(characterId: string): Promise<void> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  if (!session) throw new Error('Not signed in.')
-
-  // Image generation genuinely takes a while; cap it so a hung request
-  // surfaces as a clear error instead of an indefinite spinner.
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 90_000)
-  let response: Response
-  try {
-    response = await fetch('/api/generate-portrait', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ characterId }),
-      signal: controller.signal,
-    })
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') {
-      throw new Error('La génération a pris trop de temps — réessayez.', { cause: err })
-    }
-    throw err
-  } finally {
-    clearTimeout(timeout)
-  }
-
-  const body = (await response.json()) as { portraitUrl: string } | { error: string }
-  if (!response.ok || 'error' in body) {
-    throw new Error('error' in body ? body.error : 'La génération du portrait a échoué.')
-  }
+  await postToApi('/api/generate-portrait', { characterId })
 }

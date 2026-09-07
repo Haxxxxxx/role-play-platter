@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { postToApi } from '@/lib/apiFetch'
 
 export type RecommendationCategory = 'quest' | 'npc' | 'pacing' | 'worldbuilding' | 'combat'
 
@@ -14,20 +14,6 @@ export interface Recommendation {
  * list, not a conversation, so there's no history to keep in sync.
  */
 export async function fetchGmRecommendations(campaignId: string): Promise<Recommendation[]> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  if (!session) throw new Error('Not signed in.')
-
-  const response = await fetch('/api/gm-recommendations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-    body: JSON.stringify({ campaignId }),
-  })
-
-  const body = (await response.json()) as { recommendations: Recommendation[] } | { error: string }
-  if (!response.ok || 'error' in body) {
-    throw new Error('error' in body ? body.error : 'Failed to generate recommendations.')
-  }
+  const body = await postToApi<{ recommendations: Recommendation[] }>('/api/gm-recommendations', { campaignId })
   return body.recommendations
 }
