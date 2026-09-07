@@ -32,3 +32,6 @@ ui-debug.log
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code worktrees & local settings
+.claude/
