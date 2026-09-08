@@ -151,6 +151,10 @@ export interface MapToken extends BaseRow {
   refCharacterId: string | null
   refLocationId: string | null
   visibleToPlayers: boolean
+  /** GM-authored: what the token hides — loot, a trap's effect, a secret,
+   * a bonus. Players only receive it once the token is revealed
+   * (visible_to_players), same as the token itself. */
+  content: string
 }
 
 /** A path segment connecting two tokens — how the "whole adventure" route

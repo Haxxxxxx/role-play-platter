@@ -263,6 +263,7 @@ export interface MapTokenRow {
   ref_character_id: string | null
   ref_location_id: string | null
   visible_to_players: boolean
+  content: string
   created_at: string
   updated_at: string
 }
@@ -282,6 +283,7 @@ export function mapMapToken(row: MapTokenRow): MapToken {
     refCharacterId: row.ref_character_id,
     refLocationId: row.ref_location_id,
     visibleToPlayers: row.visible_to_players,
+    content: row.content ?? '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

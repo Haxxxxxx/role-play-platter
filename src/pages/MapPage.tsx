@@ -13,6 +13,7 @@ import {
   moveToken,
   moveTokenToMap,
   setTokenVisibility,
+  updateTokenContent,
   useBattleMap,
   useMapEdges,
   useMapTokens,
@@ -64,6 +65,13 @@ export function MapPage() {
   const [pathMode, setPathMode] = useState(false)
   const [pathFromId, setPathFromId] = useState<string | null>(null)
 
+  // Preparation phase: the campaign hasn't started, so there's no party
+  // position yet — let players browse the map freely (open any location's
+  // detail map, no travel-range gate, nothing dimmed). They still only see
+  // revealed tokens: the RLS "members read visible tokens" policy is
+  // untouched, so hidden pins and their hidden contents stay hidden.
+  const inPrep = campaign.status === 'setup'
+
   const myCharacterIds = new Set(party.filter((c) => c.ownerId === user?.id).map((c) => c.id))
   const myTokens = tokens.filter((t) => t.refCharacterId != null && myCharacterIds.has(t.refCharacterId))
 
@@ -77,7 +85,7 @@ export function MapPage() {
   }
 
   const unreachableLocationIds = new Set(
-    !isGm
+    !isGm && !inPrep
       ? tokens.filter((t) => t.kind === 'location' && !isReachableForPlayer(t)).map((t) => t.id)
       : [],
   )
@@ -111,6 +119,12 @@ export function MapPage() {
     // The GM can jump anywhere; a player has to actually have travelled
     // their character near it first — no teleporting across the map.
     if (token.kind === 'location' && token.refLocationId) {
+      // Prep phase: no party position yet, so a player can open any
+      // location's detail map to look around (still only revealed tokens).
+      if (!isGm && inPrep) {
+        navigate(`/campaign/${campaignId}/map/${token.refLocationId}`)
+        return
+      }
       if (!isGm && !isReachableForPlayer(token)) {
         pushToast('Approchez votre personnage de ce lieu pour vous y rendre.', 'info')
         return
@@ -249,7 +263,14 @@ export function MapPage() {
         </p>
       )}
 
-      {!isGm && myTokens.length > 0 && (
+      {!isGm && inPrep && (
+        <p className="mb-3 rounded-md border border-arcane-500/30 bg-arcane-500/10 px-3 py-2 text-xs text-arcane-500">
+          Phase de préparation — explorez librement la carte et les lieux. Le MJ n'a pas encore tout révélé :
+          ce qui est caché le reste.
+        </p>
+      )}
+
+      {!isGm && !inPrep && myTokens.length > 0 && (
         <p className="mb-3 text-xs text-parchment-200/50">
           Déplacez votre pion près d'un lieu pour vous y rendre — les lieux hors de portée sont estompés.
         </p>
@@ -273,9 +294,10 @@ export function MapPage() {
         onDrop={handleDrop}
       />
 
-      {isGm && !pathMode && selectedToken && (
+      {!pathMode && selectedToken && (
         <SelectedTokenToolbar
           token={selectedToken}
+          isGm={isGm}
           onDelete={() => {
             deleteToken(selectedToken.id).catch(() => pushToast('Suppression impossible.', 'error'))
             setSelectedTokenId(null)
@@ -284,6 +306,9 @@ export function MapPage() {
             setTokenVisibility(selectedToken.id, !selectedToken.visibleToPlayers).catch(() =>
               pushToast('Action impossible.', 'error'),
             )
+          }
+          onContentChange={(content) =>
+            updateTokenContent(selectedToken.id, content).catch(() => pushToast('Action impossible.', 'error'))
           }
         />
       )}

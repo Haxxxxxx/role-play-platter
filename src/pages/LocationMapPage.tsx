@@ -12,6 +12,7 @@ import {
   moveToken,
   moveTokenToMap,
   setTokenVisibility,
+  updateTokenContent,
   useLocationMap,
   useMapEdges,
   useMapTokens,
@@ -203,9 +204,10 @@ export function LocationMapPage() {
                 onDrop={handleDrop}
               />
 
-              {isGm && selectedToken && (
+              {selectedToken && (
                 <SelectedTokenToolbar
                   token={selectedToken}
+                  isGm={isGm}
                   onDelete={() => {
                     deleteToken(selectedToken.id).catch(() => pushToast('Suppression impossible.', 'error'))
                     setSelectedTokenId(null)
@@ -214,6 +216,9 @@ export function LocationMapPage() {
                     setTokenVisibility(selectedToken.id, !selectedToken.visibleToPlayers).catch(() =>
                       pushToast('Action impossible.', 'error'),
                     )
+                  }
+                  onContentChange={(content) =>
+                    updateTokenContent(selectedToken.id, content).catch(() => pushToast('Action impossible.', 'error'))
                   }
                 />
               )}

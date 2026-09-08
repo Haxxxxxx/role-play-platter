@@ -241,6 +241,13 @@ export async function setTokenVisibility(tokenId: string, visibleToPlayers: bool
   if (error) throw error
 }
 
+/** GM-only (RLS): what the token hides — loot, trap effect, a secret. Only
+ * reaches players once the token is revealed. */
+export async function updateTokenContent(tokenId: string, content: string): Promise<void> {
+  const { error } = await supabase.from('map_tokens').update({ content }).eq('id', tokenId)
+  if (error) throw error
+}
+
 export function useMapEdges(mapId: string | undefined) {
   return useSupabaseCollection<MapEdgeRow, MapEdge>({
     table: 'map_edges',
