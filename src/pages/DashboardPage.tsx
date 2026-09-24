@@ -133,7 +133,7 @@ export function DashboardPage() {
 
 function CampaignCard({ campaign, isGm, onCopyInvite }: { campaign: Campaign; isGm: boolean; onCopyInvite: () => void }) {
   return (
-    <Card interactive className="p-4">
+    <Card interactive padding="sm">
       <Link to={`/campaign/${campaign.id}`} className="block">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-display text-lg text-parchment-100">{campaign.name}</h3>
