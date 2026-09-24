@@ -3,7 +3,8 @@ import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useCampaign, updateCampaignStatus } from '@/hooks/useCampaigns'
 import { useUiStore } from '@/store/useUiStore'
-import { CAMPAIGN_STATUS_LABEL, CAMPAIGN_STATUS_BADGE_CLASS } from '@/lib/campaignStatus'
+import { CAMPAIGN_STATUS_LABEL, CAMPAIGN_STATUS_BADGE_VARIANT } from '@/lib/campaignStatus'
+import { Badge, Button } from '@/components/ui'
 import type { CampaignStatus } from '@/types/database'
 
 const ALL_TABS = [
@@ -25,78 +26,69 @@ export function CampaignLayout() {
     onError: () => pushToast('Impossible de changer le statut de la campagne.', 'error'),
   })
 
-  if (loading) return <div className="p-10 text-parchment-200/60">Chargement de la campagne…</div>
-  if (!campaign) return <div className="p-10 text-parchment-200/60">Campagne introuvable.</div>
+  if (loading) return <div className="p-10 text-parchment-300">Chargement de la campagne…</div>
+  if (!campaign) return <div className="p-10 text-parchment-300">Campagne introuvable.</div>
 
   const isGm = user?.id === campaign.gmId
   const tabs = ALL_TABS.filter((tab) => !tab.gmOnly || isGm)
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-ink-700 bg-ink-900/60 px-6 py-4">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-2xl text-parchment-100">{campaign.name}</h1>
-              <span
-                className={`shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                  isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
-                }`}
-              >
-                {isGm ? 'MJ' : 'Joueur'}
-              </span>
-              <span
-                className={`shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${CAMPAIGN_STATUS_BADGE_CLASS[campaign.status]}`}
-              >
-                {CAMPAIGN_STATUS_LABEL[campaign.status]}
-              </span>
-            </div>
-            <p className="text-xs uppercase tracking-wide text-ember-400">{campaign.system}</p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-3">
+      <header className="sticky top-0 z-10 border-b border-ink-700 bg-ink-950/90 backdrop-blur">
+        <div className="mx-auto max-w-5xl px-4 pt-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <NavLink
+              to="/"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm text-parchment-300 transition hover:text-parchment-100"
+            >
+              <span aria-hidden>←</span> Campagnes
+            </NavLink>
             {isGm && campaign.status === 'setup' && (
-              <button
-                onClick={() => statusMutation.mutate('active')}
-                disabled={statusMutation.isPending}
-                className="shrink-0 whitespace-nowrap rounded-md bg-ember-500 px-3 py-1.5 text-sm font-medium text-ink-950 hover:bg-ember-400 disabled:opacity-50"
-              >
-                ▶ Démarrer la campagne
-              </button>
+              <Button size="sm" onClick={() => statusMutation.mutate('active')} disabled={statusMutation.isPending}>
+                ▶ Démarrer
+              </Button>
             )}
             {isGm && campaign.status === 'active' && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => statusMutation.mutate('completed')}
                 disabled={statusMutation.isPending}
-                className="shrink-0 whitespace-nowrap rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800 disabled:opacity-50"
               >
-                ✓ Terminer la campagne
-              </button>
+                ✓ Terminer
+              </Button>
             )}
             {isGm && campaign.status === 'completed' && (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => statusMutation.mutate('active')}
                 disabled={statusMutation.isPending}
-                className="shrink-0 whitespace-nowrap text-xs text-parchment-200/40 hover:text-parchment-100 disabled:opacity-50"
               >
-                ↺ Reprendre la campagne
-              </button>
+                ↺ Reprendre
+              </Button>
             )}
-            <NavLink to="/" className="shrink-0 whitespace-nowrap text-sm text-parchment-200/60 hover:text-parchment-100">
-              ← Toutes les campagnes
-            </NavLink>
           </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <h1 className="min-w-0 truncate font-display text-xl text-parchment-100 sm:text-2xl">{campaign.name}</h1>
+            <Badge variant={isGm ? 'ember' : 'neutral'}>{isGm ? 'MJ' : 'Joueur'}</Badge>
+            <Badge variant={CAMPAIGN_STATUS_BADGE_VARIANT[campaign.status]}>
+              {CAMPAIGN_STATUS_LABEL[campaign.status]}
+            </Badge>
+          </div>
+          <p className="mt-0.5 pb-4 text-xs uppercase tracking-wide text-ember-400">{campaign.system}</p>
         </div>
-        <nav className="mx-auto mt-4 flex max-w-5xl gap-1">
+
+        <nav className="scrollbar-none mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 sm:px-6">
           {tabs.map((tab) => (
             <NavLink
               key={tab.label}
               to={tab.to}
               end={tab.end}
               className={({ isActive }) =>
-                `rounded-t-md px-4 py-2 text-sm ${
-                  isActive
-                    ? 'bg-ink-950 text-ember-400'
-                    : 'text-parchment-200/60 hover:text-parchment-100'
+                `shrink-0 whitespace-nowrap rounded-t-md px-4 py-2 text-sm transition ${
+                  isActive ? 'bg-ink-900 text-ember-400' : 'text-parchment-300 hover:text-parchment-100'
                 }`
               }
             >
@@ -105,7 +97,7 @@ export function CampaignLayout() {
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <Outlet context={{ campaign }} />
       </main>
     </div>

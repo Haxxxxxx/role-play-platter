@@ -2,19 +2,20 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLocations, useNpcs, useQuests, useTimeline } from '@/hooks/useChronicle'
 import { findTokenLocation } from '@/hooks/useBattleMap'
 import { useUiStore } from '@/store/useUiStore'
+import { Badge, EmptyState } from '@/components/ui'
 import type { Npc, NpcDisposition, QuestStatus } from '@/types/database'
 
-const DISPOSITION_COLOR: Record<NpcDisposition, string> = {
-  ally: 'text-emerald-400',
-  enemy: 'text-red-400',
-  neutral: 'text-parchment-200/70',
-  unknown: 'text-parchment-200/40',
+const DISPOSITION: Record<NpcDisposition, { label: string; variant: 'success' | 'danger' | 'neutral' }> = {
+  ally: { label: 'Allié', variant: 'success' },
+  enemy: { label: 'Ennemi', variant: 'danger' },
+  neutral: { label: 'Neutre', variant: 'neutral' },
+  unknown: { label: 'Inconnu', variant: 'neutral' },
 }
 
-const QUEST_STATUS_COLOR: Record<QuestStatus, string> = {
-  active: 'border-arcane-500/50 text-arcane-500',
-  completed: 'border-emerald-500/50 text-emerald-400',
-  failed: 'border-red-500/50 text-red-400',
+const QUEST_STATUS: Record<QuestStatus, { label: string; variant: 'arcane' | 'success' | 'danger' }> = {
+  active: { label: 'En cours', variant: 'arcane' },
+  completed: { label: 'Terminée', variant: 'success' },
+  failed: { label: 'Échouée', variant: 'danger' },
 }
 
 export function ChroniclePage() {
@@ -43,11 +44,16 @@ export function ChroniclePage() {
     <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
       <section>
         <h2 className="mb-4 font-display text-xl text-parchment-100">Historique du groupe</h2>
-        {timelineLoading && <p className="text-parchment-200/60">Chargement…</p>}
+        {timelineLoading && <p className="text-parchment-300">Chargement…</p>}
         {!timelineLoading && timeline.length === 0 && (
-          <p className="text-sm text-parchment-200/60">
-            Rien pour l'instant — ajoutez une session dans <em>Notes du MJ</em> et elle apparaîtra ici.
-          </p>
+          <EmptyState
+            title="Rien pour l'instant"
+            description={
+              <>
+                Ajoutez une session dans <em>Notes du MJ</em> et elle apparaîtra ici.
+              </>
+            }
+          />
         )}
         <ol className="relative border-l border-ink-700 pl-6">
           {timeline.map((event) => {
@@ -56,18 +62,18 @@ export function ChroniclePage() {
               <li key={event.id} className="mb-6">
                 <div className="absolute -ml-[29px] mt-1.5 h-2.5 w-2.5 rounded-full bg-ember-500" />
                 <h3 className="font-medium text-parchment-100">{event.title}</h3>
-                <p className="mt-1 text-sm text-parchment-200/70">{event.description}</p>
+                <p className="mt-1 text-sm text-parchment-300">{event.description}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   {eventLocation && (
                     <button
                       onClick={() => navigate(`/campaign/${campaignId}/map/${eventLocation.id}`)}
-                      className="rounded-full border border-ember-500/40 px-2 py-0.5 text-xs text-ember-400 hover:bg-ember-500/10"
+                      className="rounded-full border border-ember-500/40 px-2 py-0.5 text-xs text-ember-400 transition hover:bg-ember-500/10"
                     >
                       📍 {eventLocation.name}
                     </button>
                   )}
                   {event.tags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-ink-800 px-2 py-0.5 text-xs text-parchment-200/60">
+                    <span key={tag} className="rounded-full bg-ink-800 px-2 py-0.5 text-xs text-parchment-300">
                       {tag}
                     </span>
                   ))}
@@ -81,15 +87,15 @@ export function ChroniclePage() {
       <aside className="flex flex-col gap-8">
         <div>
           <h2 className="mb-3 font-display text-lg text-parchment-100">Journal des quêtes</h2>
-          {quests.length === 0 && <p className="text-sm text-parchment-200/60">Aucune quête pour l'instant.</p>}
+          {quests.length === 0 && <p className="text-sm text-parchment-300">Aucune quête pour l'instant.</p>}
           <ul className="flex flex-col gap-2">
             {quests.map((q) => (
-              <li key={q.id} className={`rounded-lg border p-3 text-sm ${QUEST_STATUS_COLOR[q.status]}`}>
-                <div className="flex items-center justify-between">
+              <li key={q.id} className="rounded-xl border border-ink-700 bg-ink-900 p-3 text-sm">
+                <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-parchment-100">{q.title}</span>
-                  <span className="text-xs uppercase">{q.status}</span>
+                  <Badge variant={QUEST_STATUS[q.status].variant}>{QUEST_STATUS[q.status].label}</Badge>
                 </div>
-                <p className="mt-1 text-parchment-200/70">{q.description}</p>
+                <p className="mt-1 text-parchment-300">{q.description}</p>
               </li>
             ))}
           </ul>
@@ -97,13 +103,13 @@ export function ChroniclePage() {
 
         <div>
           <h2 className="mb-3 font-display text-lg text-parchment-100">Lieux</h2>
-          {locations.length === 0 && <p className="text-sm text-parchment-200/60">Aucun lieu découvert.</p>}
+          {locations.length === 0 && <p className="text-sm text-parchment-300">Aucun lieu découvert.</p>}
           <div className="flex flex-wrap gap-1.5">
             {locations.map((loc) => (
               <button
                 key={loc.id}
                 onClick={() => navigate(`/campaign/${campaignId}/map/${loc.id}`)}
-                className="rounded-full border border-ink-700 bg-ink-900 px-3 py-1 text-sm text-parchment-100 hover:border-ember-500/50 hover:text-ember-400"
+                className="rounded-full border border-ink-700 bg-ink-900 px-3 py-1 text-sm text-parchment-100 transition hover:border-ember-500/50 hover:text-ember-400"
               >
                 📍 {loc.name}
               </button>
@@ -113,24 +119,20 @@ export function ChroniclePage() {
 
         <div>
           <h2 className="mb-3 font-display text-lg text-parchment-100">Codex des PNJ</h2>
-          {npcs.length === 0 && <p className="text-sm text-parchment-200/60">Aucun PNJ pour l'instant.</p>}
+          {npcs.length === 0 && <p className="text-sm text-parchment-300">Aucun PNJ pour l'instant.</p>}
           <ul className="flex flex-col gap-2">
             {npcs.map((npc) => (
               <li key={npc.id}>
                 <button
                   onClick={() => openNpcOnMap(npc)}
-                  className="group w-full rounded-lg border border-ink-700 bg-ink-900 p-3 text-left text-sm hover:border-ember-500/50"
+                  className="group w-full rounded-xl border border-ink-700 bg-ink-900 p-3 text-left text-sm transition hover:border-ember-500/50"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-parchment-100">{npc.name}</span>
-                    <span className={`text-xs uppercase ${DISPOSITION_COLOR[npc.disposition]}`}>
-                      {npc.disposition}
-                    </span>
+                    <Badge variant={DISPOSITION[npc.disposition].variant}>{DISPOSITION[npc.disposition].label}</Badge>
                   </div>
-                  <p className="mt-1 text-parchment-200/70">{npc.description}</p>
-                  <p className="mt-1.5 text-xs text-parchment-200/0 group-hover:text-ember-400/80">
-                    Voir sur la carte →
-                  </p>
+                  <p className="mt-1 text-parchment-300">{npc.description}</p>
+                  <p className="mt-1.5 text-xs text-transparent group-hover:text-ember-400/80">Voir sur la carte →</p>
                 </button>
               </li>
             ))}

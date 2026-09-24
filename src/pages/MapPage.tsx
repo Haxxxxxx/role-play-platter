@@ -23,6 +23,8 @@ import { MapGrid } from '@/components/battlemap/MapGrid'
 import { GmToolbar } from '@/components/battlemap/GmToolbar'
 import { SelectedTokenToolbar } from '@/components/battlemap/SelectedTokenToolbar'
 import { useUiStore } from '@/store/useUiStore'
+import { EmptyState } from '@/components/ui'
+import { MapViewHeader } from '@/components/battlemap/MapViewHeader'
 import type { Campaign, MapToken } from '@/types/database'
 
 interface MapNavState {
@@ -177,40 +179,15 @@ export function MapPage() {
 
   const selectedToken = tokens.find((t) => t.id === selectedTokenId) ?? null
 
-  if (mapLoading) return <div className="p-10 text-parchment-200/60">Chargement de la carte…</div>
+  if (mapLoading) return <div className="p-10 text-parchment-300">Chargement de la carte…</div>
 
   if (!map) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-ink-700 py-24 text-center">
-        <h2 className="font-display text-xl text-parchment-100">En attente du MJ</h2>
-        <p className="mt-2 max-w-md text-sm text-parchment-200/60">
-          Le MJ n'a pas encore ouvert la carte de cette campagne.
-        </p>
-      </div>
-    )
+    return <EmptyState title="En attente du MJ" description="Le MJ n'a pas encore ouvert la carte de cette campagne." />
   }
 
   return (
     <div ref={fullscreenRef} className={isFullscreen ? 'overflow-auto bg-ink-950 p-4' : ''}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-xl text-parchment-100">{map.name}</h2>
-        <div className="flex shrink-0 items-center gap-2">
-          <span
-            className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
-              isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
-            }`}
-          >
-            {isGm ? 'Vue MJ — éditable' : 'Vue joueur'}
-          </span>
-          <button
-            onClick={toggleFullscreen}
-            title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
-            className="rounded-md border border-ink-700 px-2 py-1 text-xs text-parchment-200/60 hover:border-ember-500/50 hover:text-ember-400"
-          >
-            {isFullscreen ? '⤢ Quitter' : '⛶ Plein écran'}
-          </button>
-        </div>
-      </div>
+      <MapViewHeader title={map.name} isGm={isGm} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
 
       {isGm && (
         <GmToolbar
@@ -271,7 +248,7 @@ export function MapPage() {
       )}
 
       {!isGm && !inPrep && myTokens.length > 0 && (
-        <p className="mb-3 text-xs text-parchment-200/50">
+        <p className="mb-3 text-xs text-parchment-300">
           Déplacez votre pion près d'un lieu pour vous y rendre — les lieux hors de portée sont estompés.
         </p>
       )}

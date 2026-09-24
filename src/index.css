@@ -5,11 +5,16 @@
   --color-ink-900: #171220;
   --color-ink-800: #211a2e;
   --color-ink-700: #2c2340;
+  --color-ink-600: #392c4f;
   --color-parchment-100: #f5ecd9;
   --color-parchment-200: #e9dcc0;
+  --color-parchment-300: #b8a98f;
+  --color-parchment-400: #8a7d6d;
+  --color-ember-600: #b85f42;
   --color-ember-500: #d97757;
   --color-ember-400: #e6926f;
   --color-arcane-500: #7c6ce8;
+  --color-arcane-400: #9a8dee;
   --font-display: "Cinzel", ui-serif, Georgia, serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
@@ -37,4 +42,12 @@ body {
 
 .animate-toast-in {
   animation: toast-in 180ms ease-out;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

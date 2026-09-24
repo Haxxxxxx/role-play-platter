@@ -6,8 +6,8 @@ export const CAMPAIGN_STATUS_LABEL: Record<CampaignStatus, string> = {
   completed: 'Terminée',
 }
 
-export const CAMPAIGN_STATUS_BADGE_CLASS: Record<CampaignStatus, string> = {
-  setup: 'border-arcane-500/50 text-arcane-500',
-  active: 'border-emerald-500/50 text-emerald-400',
-  completed: 'border-ink-700 text-parchment-200/50',
+export const CAMPAIGN_STATUS_BADGE_VARIANT: Record<CampaignStatus, 'arcane' | 'success' | 'neutral'> = {
+  setup: 'arcane',
+  active: 'success',
+  completed: 'neutral',
 }
