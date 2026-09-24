@@ -5,30 +5,17 @@ import { useUiStore } from '@/store/useUiStore'
 import { Badge, EmptyState } from '@/components/ui'
 import type { Npc, NpcDisposition, QuestStatus } from '@/types/database'
 
-const DISPOSITION_LABEL: Record<NpcDisposition, string> = {
-  ally: 'Allié',
-  enemy: 'Ennemi',
-  neutral: 'Neutre',
-  unknown: 'Inconnu',
+const DISPOSITION: Record<NpcDisposition, { label: string; variant: 'success' | 'danger' | 'neutral' }> = {
+  ally: { label: 'Allié', variant: 'success' },
+  enemy: { label: 'Ennemi', variant: 'danger' },
+  neutral: { label: 'Neutre', variant: 'neutral' },
+  unknown: { label: 'Inconnu', variant: 'neutral' },
 }
 
-const DISPOSITION_VARIANT: Record<NpcDisposition, 'success' | 'danger' | 'neutral'> = {
-  ally: 'success',
-  enemy: 'danger',
-  neutral: 'neutral',
-  unknown: 'neutral',
-}
-
-const QUEST_STATUS_LABEL: Record<QuestStatus, string> = {
-  active: 'En cours',
-  completed: 'Terminée',
-  failed: 'Échouée',
-}
-
-const QUEST_STATUS_VARIANT: Record<QuestStatus, 'arcane' | 'success' | 'danger'> = {
-  active: 'arcane',
-  completed: 'success',
-  failed: 'danger',
+const QUEST_STATUS: Record<QuestStatus, { label: string; variant: 'arcane' | 'success' | 'danger' }> = {
+  active: { label: 'En cours', variant: 'arcane' },
+  completed: { label: 'Terminée', variant: 'success' },
+  failed: { label: 'Échouée', variant: 'danger' },
 }
 
 export function ChroniclePage() {
@@ -106,7 +93,7 @@ export function ChroniclePage() {
               <li key={q.id} className="rounded-xl border border-ink-700 bg-ink-900 p-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-parchment-100">{q.title}</span>
-                  <Badge variant={QUEST_STATUS_VARIANT[q.status]}>{QUEST_STATUS_LABEL[q.status]}</Badge>
+                  <Badge variant={QUEST_STATUS[q.status].variant}>{QUEST_STATUS[q.status].label}</Badge>
                 </div>
                 <p className="mt-1 text-parchment-300">{q.description}</p>
               </li>
@@ -142,7 +129,7 @@ export function ChroniclePage() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-parchment-100">{npc.name}</span>
-                    <Badge variant={DISPOSITION_VARIANT[npc.disposition]}>{DISPOSITION_LABEL[npc.disposition]}</Badge>
+                    <Badge variant={DISPOSITION[npc.disposition].variant}>{DISPOSITION[npc.disposition].label}</Badge>
                   </div>
                   <p className="mt-1 text-parchment-300">{npc.description}</p>
                   <p className="mt-1.5 text-xs text-transparent group-hover:text-ember-400/80">Voir sur la carte →</p>

@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react'
+import type { ElementType, HTMLAttributes } from 'react'
 import { cn } from '@/lib/cn'
 
 const PADDING_CLASSES = {
@@ -7,13 +7,20 @@ const PADDING_CLASSES = {
 } as const
 
 export function Card({
+  as: Tag = 'div',
   interactive = false,
   padding = 'md',
   className,
   ...props
-}: HTMLAttributes<HTMLDivElement> & { interactive?: boolean; padding?: keyof typeof PADDING_CLASSES }) {
+}: HTMLAttributes<HTMLElement> & {
+  /** Render as a different element (e.g. "section") when the surrounding
+   * markup needs the landmark semantics — a plain div otherwise. */
+  as?: ElementType
+  interactive?: boolean
+  padding?: keyof typeof PADDING_CLASSES
+}) {
   return (
-    <div
+    <Tag
       className={cn(
         'rounded-xl border border-ink-700 bg-ink-900',
         PADDING_CLASSES[padding],

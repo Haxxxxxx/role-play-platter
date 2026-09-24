@@ -15,6 +15,7 @@ const NOTE_STATUS: Record<SessionNoteStatus, { label: string; variant: 'neutral'
   processed: { label: 'Traité', variant: 'success' },
   error: { label: 'Erreur', variant: 'danger' },
 }
+const FALLBACK_NOTE_STATUS = { label: 'Inconnu', variant: 'neutral' as const }
 
 const KIND_LABEL: Record<SessionNoteKind, string> = {
   'session-recap': 'Récap de session',
@@ -121,8 +122,10 @@ export function NotesPage() {
           {notes.map((note) => (
             <li key={note.id} className="rounded-xl border border-ink-700 bg-ink-900 p-3 text-sm">
               <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="uppercase text-parchment-300">{KIND_LABEL[note.kind]}</span>
-                <Badge variant={NOTE_STATUS[note.status].variant}>{NOTE_STATUS[note.status].label}</Badge>
+                <span className="uppercase text-parchment-400">{KIND_LABEL[note.kind]}</span>
+                <Badge variant={(NOTE_STATUS[note.status] ?? FALLBACK_NOTE_STATUS).variant}>
+                  {(NOTE_STATUS[note.status] ?? FALLBACK_NOTE_STATUS).label}
+                </Badge>
               </div>
               <p className="text-parchment-300">{note.rawText}</p>
               {note.narrativeRecap && (

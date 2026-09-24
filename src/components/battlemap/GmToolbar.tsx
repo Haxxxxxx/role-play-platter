@@ -1,4 +1,5 @@
 import { DECORATION_PRESETS, MONSTER_STYLE } from '@/components/battlemap/presets'
+import { Select } from '@/components/ui'
 import type { Location, Npc } from '@/types/database'
 
 interface DecorationPreset {
@@ -6,9 +7,6 @@ interface DecorationPreset {
   icon: string
   color: string
 }
-
-const SELECT_CLASS =
-  'rounded-md border border-ink-700 bg-ink-950 px-2 py-1.5 text-xs text-parchment-200 outline-none focus:border-ember-500'
 
 function ToolGroup({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
   return (
@@ -69,14 +67,14 @@ export function GmToolbar({
       <div className="self-stretch border-l border-ink-700" />
 
       <ToolGroup label="Placer un pion">
-        <select
+        <Select
           onChange={(e) => {
             const npc = npcs.find((n) => n.id === e.target.value)
             if (npc) onAddNpc(npc)
             e.target.value = ''
           }}
           defaultValue=""
-          className={SELECT_CLASS}
+          size="sm"
         >
           <option value="" disabled>
             PNJ…
@@ -86,17 +84,17 @@ export function GmToolbar({
               {npc.name}
             </option>
           ))}
-        </select>
+        </Select>
 
         {locations && onAddLocation && (
-          <select
+          <Select
             onChange={(e) => {
               const location = locations.find((l) => l.id === e.target.value)
               if (location) onAddLocation(location)
               e.target.value = ''
             }}
             defaultValue=""
-            className={SELECT_CLASS}
+            size="sm"
           >
             <option value="" disabled>
               Lieu…
@@ -106,17 +104,17 @@ export function GmToolbar({
                 {l.name}
               </option>
             ))}
-          </select>
+          </Select>
         )}
 
-        <select
+        <Select
           onChange={(e) => {
             const character = party.find((c) => c.id === e.target.value)
             if (character) onAddCharacter(character.id, character.name)
             e.target.value = ''
           }}
           defaultValue=""
-          className={SELECT_CLASS}
+          size="sm"
         >
           <option value="" disabled>
             Personnage…
@@ -126,7 +124,7 @@ export function GmToolbar({
               {c.name}
             </option>
           ))}
-        </select>
+        </Select>
       </ToolGroup>
 
       {onTogglePathMode && (

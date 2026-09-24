@@ -22,7 +22,8 @@ import { MapGrid } from '@/components/battlemap/MapGrid'
 import { GmToolbar } from '@/components/battlemap/GmToolbar'
 import { SelectedTokenToolbar } from '@/components/battlemap/SelectedTokenToolbar'
 import { useUiStore } from '@/store/useUiStore'
-import { Badge, Button, EmptyState } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
+import { MapViewHeader } from '@/components/battlemap/MapViewHeader'
 import type { Campaign, MapToken } from '@/types/database'
 
 interface MapNavState {
@@ -126,23 +127,19 @@ export function LocationMapPage() {
         <p className="text-parchment-300">Lieu introuvable.</p>
       ) : (
         <>
-          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-display text-xl text-parchment-100">📍 {location.name}</h2>
-            <div className="flex shrink-0 items-center gap-2">
-              <Badge variant={isGm ? 'ember' : 'neutral'}>{isGm ? 'Vue MJ — éditable' : 'Vue joueur'}</Badge>
-              <Button variant="secondary" size="xs" onClick={toggleFullscreen} title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
-                {isFullscreen ? '⤢ Quitter' : '⛶ Plein écran'}
-              </Button>
-            </div>
-          </div>
+          <MapViewHeader
+            title={<>📍 {location.name}</>}
+            isGm={isGm}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
+            className="mb-1"
+          />
           {location.description && <p className="mb-4 text-sm text-parchment-300">{location.description}</p>}
 
           {mapLoading && <div className="p-10 text-parchment-300">Chargement de la carte…</div>}
 
           {!mapLoading && !map && (
-            <div className="py-16">
-              <EmptyState title="Pas encore de carte détaillée" description="Le MJ n'a pas encore ouvert ce lieu." />
-            </div>
+            <EmptyState title="Pas encore de carte détaillée" description="Le MJ n'a pas encore ouvert ce lieu." />
           )}
 
           {map && (

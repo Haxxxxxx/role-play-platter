@@ -23,7 +23,8 @@ import { MapGrid } from '@/components/battlemap/MapGrid'
 import { GmToolbar } from '@/components/battlemap/GmToolbar'
 import { SelectedTokenToolbar } from '@/components/battlemap/SelectedTokenToolbar'
 import { useUiStore } from '@/store/useUiStore'
-import { Badge, Button, EmptyState } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
+import { MapViewHeader } from '@/components/battlemap/MapViewHeader'
 import type { Campaign, MapToken } from '@/types/database'
 
 interface MapNavState {
@@ -181,24 +182,12 @@ export function MapPage() {
   if (mapLoading) return <div className="p-10 text-parchment-300">Chargement de la carte…</div>
 
   if (!map) {
-    return (
-      <div className="py-16">
-        <EmptyState title="En attente du MJ" description="Le MJ n'a pas encore ouvert la carte de cette campagne." />
-      </div>
-    )
+    return <EmptyState title="En attente du MJ" description="Le MJ n'a pas encore ouvert la carte de cette campagne." />
   }
 
   return (
     <div ref={fullscreenRef} className={isFullscreen ? 'overflow-auto bg-ink-950 p-4' : ''}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-xl text-parchment-100">{map.name}</h2>
-        <div className="flex shrink-0 items-center gap-2">
-          <Badge variant={isGm ? 'ember' : 'neutral'}>{isGm ? 'Vue MJ — éditable' : 'Vue joueur'}</Badge>
-          <Button variant="secondary" size="xs" onClick={toggleFullscreen} title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
-            {isFullscreen ? '⤢ Quitter' : '⛶ Plein écran'}
-          </Button>
-        </div>
-      </div>
+      <MapViewHeader title={map.name} isGm={isGm} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
 
       {isGm && (
         <GmToolbar

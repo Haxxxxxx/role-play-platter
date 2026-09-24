@@ -95,7 +95,7 @@ function RosterSection({ campaignId, gmId }: { campaignId: string; gmId: string 
   const alreadyInvited = members.map((m) => m.userId)
 
   return (
-    <Card className="mb-8">
+    <Card as="section" className="mb-8">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-display text-lg text-parchment-100">Participants</h3>
         <button onClick={copyInviteLink} className="text-xs text-parchment-300 hover:text-ember-400">
@@ -154,7 +154,7 @@ function SystemReferenceSection({
   })
 
   return (
-    <Card className="mb-8">
+    <Card as="section" className="mb-8">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="font-display text-lg text-parchment-100">Référence du système</h3>
