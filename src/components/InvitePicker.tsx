@@ -56,7 +56,7 @@ export function InvitePicker({
 
   return (
     <div>
-      <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-parchment-200/40">
+      <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-parchment-400">
         Inviter des joueurs (optionnel)
       </label>
       {!hideChips && invitees.length > 0 && (
@@ -83,9 +83,9 @@ export function InvitePicker({
         />
         {query.trim().length >= 2 && (
           <div className="absolute z-10 mt-1 w-full rounded-md border border-ink-700 bg-ink-950 shadow-lg">
-            {searching && <p className="px-3 py-2 text-xs text-parchment-200/50">Recherche…</p>}
+            {searching && <p className="px-3 py-2 text-xs text-parchment-400">Recherche…</p>}
             {!searching && results.length === 0 && (
-              <p className="px-3 py-2 text-xs text-parchment-200/50">
+              <p className="px-3 py-2 text-xs text-parchment-400">
                 Personne trouvé — ils devront rejoindre via le lien d'invitation.
               </p>
             )}
@@ -102,7 +102,7 @@ export function InvitePicker({
               >
                 {p.avatarUrl && <img src={p.avatarUrl} alt="" className="h-5 w-5 rounded-full" />}
                 <span className="text-parchment-100">{p.displayName ?? 'Sans nom'}</span>
-                {p.email && <span className="text-xs text-parchment-200/50">{p.email}</span>}
+                {p.email && <span className="text-xs text-parchment-400">{p.email}</span>}
               </button>
             ))}
           </div>

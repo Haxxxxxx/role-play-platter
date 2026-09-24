@@ -5,7 +5,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCampaigns, createCampaign } from '@/hooks/useCampaigns'
 import type { Profile } from '@/hooks/useProfiles'
 import { InvitePicker } from '@/components/InvitePicker'
-import { CAMPAIGN_STATUS_LABEL, CAMPAIGN_STATUS_BADGE_CLASS } from '@/lib/campaignStatus'
+import { CAMPAIGN_STATUS_LABEL, CAMPAIGN_STATUS_BADGE_VARIANT } from '@/lib/campaignStatus'
+import { Badge, Button, Card, EmptyState, Input, PageHeader, Select } from '@/components/ui'
 import type { Campaign, RpgSystem } from '@/types/database'
 import { useUiStore } from '@/store/useUiStore'
 
@@ -50,23 +51,21 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
-      <header className="mb-8 flex items-center justify-between">
-        <h1 className="font-display text-3xl text-parchment-100">Vos campagnes</h1>
-        <Link
-          to="/profile"
-          className="flex items-center gap-2 rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800"
-        >
-          👤 Profil
-          {user?.is_anonymous && (
-            <span className="shrink-0 whitespace-nowrap rounded-full border border-arcane-500/50 px-1.5 py-0.5 text-[10px] uppercase text-arcane-500">
-              Invité
-            </span>
-          )}
-        </Link>
-      </header>
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+      <PageHeader
+        title="Vos campagnes"
+        actions={
+          <Link
+            to="/profile"
+            className="inline-flex items-center gap-2 rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-300 transition hover:bg-ink-800"
+          >
+            👤 Profil
+            {user?.is_anonymous && <Badge variant="arcane">Invité</Badge>}
+          </Link>
+        }
+      />
 
-      <section className="mb-10 rounded-xl border border-ink-700 bg-ink-900 p-5">
+      <Card className="mb-10">
         <h2 className="mb-3 font-display text-lg text-parchment-100">Démarrer une nouvelle campagne</h2>
         <form
           className="flex flex-col gap-3"
@@ -76,29 +75,28 @@ export function DashboardPage() {
             createMutation.mutate()
           }}
         >
-          <input
+          <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nom de la campagne (ex. La Malédiction de Kaer Doreth)"
-            className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
           />
-          <div className="flex gap-3">
-            <select
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Select
               value={system}
               onChange={(e) => setSystem(e.target.value as RpgSystem)}
-              className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
+              className="sm:w-56"
             >
               {SYSTEMS.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
-            </select>
-            <input
+            </Select>
+            <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Pitch en une ligne (optionnel)"
-              className="flex-1 rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
+              className="flex-1"
             />
           </div>
 
@@ -109,20 +107,19 @@ export function DashboardPage() {
             onRemove={(id) => setInvitees((prev) => prev.filter((p) => p.id !== id))}
           />
 
-          <button
-            type="submit"
-            disabled={createMutation.isPending || !name.trim()}
-            className="self-start rounded-md bg-ember-500 px-4 py-2 text-sm font-medium text-ink-950 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={createMutation.isPending || !name.trim()} className="self-start">
             {createMutation.isPending ? 'Création…' : 'Créer la campagne'}
-          </button>
+          </Button>
         </form>
-      </section>
+      </Card>
 
       <section>
-        {loading && <p className="text-parchment-200/60">Chargement…</p>}
+        {loading && <p className="text-parchment-300">Chargement…</p>}
         {!loading && campaigns.length === 0 && (
-          <p className="text-parchment-200/60">Aucune campagne pour le moment — créez-en une ci-dessus.</p>
+          <EmptyState
+            title="Aucune campagne pour le moment"
+            description="Créez-en une ci-dessus pour commencer."
+          />
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           {campaigns.map((c) => (
@@ -136,23 +133,17 @@ export function DashboardPage() {
 
 function CampaignCard({ campaign, isGm, onCopyInvite }: { campaign: Campaign; isGm: boolean; onCopyInvite: () => void }) {
   return (
-    <div className="rounded-xl border border-ink-700 bg-ink-900 p-4 transition hover:border-ember-500/50">
+    <Card interactive className="p-4">
       <Link to={`/campaign/${campaign.id}`} className="block">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-display text-lg text-parchment-100">{campaign.name}</h3>
-          {isGm && (
-            <span className="shrink-0 whitespace-nowrap rounded-full border border-ember-500/40 px-1.5 py-0.5 text-[10px] uppercase text-ember-400">
-              MJ
-            </span>
-          )}
-          <span
-            className={`shrink-0 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[10px] uppercase ${CAMPAIGN_STATUS_BADGE_CLASS[campaign.status]}`}
-          >
+          {isGm && <Badge variant="ember">MJ</Badge>}
+          <Badge variant={CAMPAIGN_STATUS_BADGE_VARIANT[campaign.status]}>
             {CAMPAIGN_STATUS_LABEL[campaign.status]}
-          </span>
+          </Badge>
         </div>
         <p className="text-xs uppercase tracking-wide text-ember-400">{campaign.system}</p>
-        {campaign.description && <p className="mt-2 text-sm text-parchment-200/70">{campaign.description}</p>}
+        {campaign.description && <p className="mt-2 text-sm text-parchment-300">{campaign.description}</p>}
       </Link>
       {isGm && (
         <button
@@ -160,11 +151,11 @@ function CampaignCard({ campaign, isGm, onCopyInvite }: { campaign: Campaign; is
             e.preventDefault()
             onCopyInvite()
           }}
-          className="mt-3 text-xs text-parchment-200/50 hover:text-ember-400"
+          className="mt-3 text-xs text-parchment-400 transition hover:text-ember-400"
         >
           🔗 Copier le lien d'invitation
         </button>
       )}
-    </div>
+    </Card>
   )
 }

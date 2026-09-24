@@ -24,7 +24,7 @@ function App() {
   }
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-parchment-200/60">Chargement…</div>
+    return <div className="flex min-h-screen items-center justify-center text-parchment-300">Chargement…</div>
   }
 
   if (!user) {
