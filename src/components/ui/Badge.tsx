@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from 'react'
 import { cn } from '@/lib/cn'
 
-type BadgeVariant = 'neutral' | 'ember' | 'arcane' | 'success' | 'danger'
+type BadgeVariant = 'neutral' | 'ember' | 'arcane' | 'success' | 'danger' | 'info'
 
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   neutral: 'border-ink-700 text-parchment-300',
@@ -9,6 +9,7 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   arcane: 'border-arcane-500/50 text-arcane-400',
   success: 'border-emerald-500/50 text-emerald-400',
   danger: 'border-red-500/50 text-red-400',
+  info: 'border-blue-500/50 text-blue-400',
 }
 
 export function Badge({

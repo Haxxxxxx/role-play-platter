@@ -18,6 +18,7 @@ import {
 import { findTokenLocation } from '@/hooks/useBattleMap'
 import { useSystemReference } from '@/hooks/useSystemReference'
 import { useUiStore } from '@/store/useUiStore'
+import { Button, Card } from '@/components/ui'
 import type { AbilityScores, Campaign, InventoryItem, Skill } from '@/types/database'
 
 const ABILITY_LABELS: Record<keyof AbilityScores, string> = {
@@ -62,22 +63,22 @@ export function CharacterPage() {
     navigate(path, { state: { centerTokenId: match.tokenId } })
   }
 
-  if (loading) return <div className="p-10 text-parchment-200/60">Chargement…</div>
-  if (!character) return <div className="p-10 text-parchment-200/60">Personnage introuvable.</div>
+  if (loading) return <div className="p-10 text-parchment-300">Chargement…</div>
+  if (!character) return <div className="p-10 text-parchment-300">Personnage introuvable.</div>
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link to={`/campaign/${campaignId}/party`} className="mb-4 inline-block text-sm text-parchment-200/60 hover:text-parchment-100">
+      <Link to={`/campaign/${campaignId}/party`} className="mb-4 inline-block text-sm text-parchment-300 hover:text-parchment-100">
         ← Retour au groupe
       </Link>
 
-      <div className="flex flex-col gap-6 rounded-xl border border-ink-700 bg-ink-900 p-6 sm:flex-row">
+      <Card className="flex flex-col gap-6 sm:flex-row">
         <PortraitPanel character={character} canEdit={canEdit} />
 
         <div className="flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <h1 className="font-display text-2xl text-parchment-100">{character.name}</h1>
-            <span className="text-sm text-parchment-200/50">{character.playerName}</span>
+            <span className="text-sm text-parchment-300">{character.playerName}</span>
           </div>
           <p className="text-sm text-ember-400">
             {character.classAndLevel} · {character.race}
@@ -89,7 +90,7 @@ export function CharacterPage() {
               {canEdit && (
                 <button
                   onClick={() => hpMutation.mutate(-1)}
-                  className="rounded border border-ink-700 px-1.5 text-parchment-200/60 hover:border-red-500/50 hover:text-red-400"
+                  className="rounded border border-ink-700 px-1.5 text-parchment-300 hover:border-red-500/50 hover:text-red-400"
                 >
                   −
                 </button>
@@ -100,7 +101,7 @@ export function CharacterPage() {
               {canEdit && (
                 <button
                   onClick={() => hpMutation.mutate(1)}
-                  className="rounded border border-ink-700 px-1.5 text-parchment-200/60 hover:border-emerald-500/50 hover:text-emerald-400"
+                  className="rounded border border-ink-700 px-1.5 text-parchment-300 hover:border-emerald-500/50 hover:text-emerald-400"
                 >
                   +
                 </button>
@@ -111,7 +112,7 @@ export function CharacterPage() {
               {canEdit && (
                 <button
                   onClick={() => acMutation.mutate(-1)}
-                  className="rounded border border-ink-700 px-1.5 text-parchment-200/60 hover:border-red-500/50 hover:text-red-400"
+                  className="rounded border border-ink-700 px-1.5 text-parchment-300 hover:border-red-500/50 hover:text-red-400"
                 >
                   −
                 </button>
@@ -120,7 +121,7 @@ export function CharacterPage() {
               {canEdit && (
                 <button
                   onClick={() => acMutation.mutate(1)}
-                  className="rounded border border-ink-700 px-1.5 text-parchment-200/60 hover:border-emerald-500/50 hover:text-emerald-400"
+                  className="rounded border border-ink-700 px-1.5 text-parchment-300 hover:border-emerald-500/50 hover:text-emerald-400"
                 >
                   +
                 </button>
@@ -131,28 +132,25 @@ export function CharacterPage() {
           <div className="mt-4 grid grid-cols-6 gap-1.5 text-center text-xs">
             {Object.entries(character.abilityScores).map(([key, value]) => (
               <div key={key} className="rounded bg-ink-800 py-1.5">
-                <div className="uppercase text-parchment-200/50">{ABILITY_LABELS[key as keyof AbilityScores]}</div>
+                <div className="uppercase text-parchment-300">{ABILITY_LABELS[key as keyof AbilityScores]}</div>
                 <div className="font-medium text-parchment-100">{value}</div>
               </div>
             ))}
           </div>
 
-          <button
-            onClick={openOnMap}
-            className="mt-4 w-full rounded-md border border-ink-700 py-1.5 text-xs text-parchment-200/60 hover:border-ember-500/50 hover:text-ember-400"
-          >
+          <Button variant="secondary" size="sm" onClick={openOnMap} className="mt-4 w-full">
             📍 Voir sur la carte
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
-        <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+        <Card padding="sm">
           <InventorySection characterId={character.id} inventory={character.inventory} canEdit={canEdit} />
-        </div>
-        <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+        </Card>
+        <Card padding="sm">
           <SkillsSection characterId={character.id} skills={character.skills} canEdit={canEdit} reference={reference} />
-        </div>
+        </Card>
       </div>
     </div>
   )
@@ -196,19 +194,19 @@ function PortraitPanel({
         {shownUrl ? (
           <img src={shownUrl} alt={character.name} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-5xl text-parchment-200/20">🧑</div>
+          <div className="flex h-full w-full items-center justify-center text-5xl text-parchment-400">🧑</div>
         )}
         {generateMutation.isPending && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ink-950/75 px-3 text-center text-xs text-parchment-200/80">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ink-950/75 px-3 text-center text-xs text-parchment-200">
             <span>Génération…</span>
-            <span className="text-[10px] text-parchment-200/50">jusqu'à une minute</span>
+            <span className="text-[10px] text-parchment-300">jusqu'à une minute</span>
           </div>
         )}
         {canEdit && !generateMutation.isPending && (
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
-            className="absolute inset-x-0 bottom-0 bg-ink-950/85 py-1.5 text-xs text-parchment-200/80 backdrop-blur-sm hover:text-ember-400 disabled:opacity-50"
+            className="absolute inset-x-0 bottom-0 bg-ink-950/85 py-1.5 text-xs text-parchment-200 backdrop-blur-sm hover:text-ember-400 disabled:opacity-50"
           >
             {uploadMutation.isPending ? 'Envoi…' : '📷 Changer l\'image'}
           </button>
@@ -216,13 +214,9 @@ function PortraitPanel({
       </div>
 
       {canEdit && (
-        <button
-          onClick={() => generateMutation.mutate()}
-          disabled={busy}
-          className="mt-2 w-48 rounded-md border border-arcane-500/50 py-1.5 text-xs text-arcane-500 hover:bg-arcane-500/10 disabled:opacity-50"
-        >
+        <Button variant="ai" size="sm" onClick={() => generateMutation.mutate()} disabled={busy} className="mt-2 w-48">
           {generateMutation.isPending ? 'Génération…' : '✨ Générer (IA)'}
-        </button>
+        </Button>
       )}
 
       <input
@@ -275,20 +269,20 @@ function InventorySection({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <h4 className="text-xs uppercase tracking-wide text-parchment-200/50">Inventaire</h4>
+        <h4 className="text-xs uppercase tracking-wide text-parchment-300">Inventaire</h4>
         {canEdit && (
-          <button onClick={() => setShowForm((s) => !s)} className="text-xs text-parchment-200/50 hover:text-ember-400">
+          <button onClick={() => setShowForm((s) => !s)} className="text-xs text-parchment-300 hover:text-ember-400">
             {showForm ? 'Annuler' : '+ Ajouter'}
           </button>
         )}
       </div>
 
       {inventory.length === 0 && !showForm ? (
-        <p className="text-sm text-parchment-200/40">Vide — les objets arrivent aussi automatiquement depuis les notes du MJ.</p>
+        <p className="text-sm text-parchment-400">Vide — les objets arrivent aussi automatiquement depuis les notes du MJ.</p>
       ) : (
         <ul className="flex flex-col gap-1 text-sm">
           {inventory.map((item) => (
-            <li key={item.id} className="flex items-center justify-between gap-2 text-parchment-200/80">
+            <li key={item.id} className="flex items-center justify-between gap-2 text-parchment-200">
               <span className="truncate">
                 {item.name} {item.quantity > 1 && `×${item.quantity}`}
               </span>
@@ -296,7 +290,7 @@ function InventorySection({
                 {canEdit ? (
                   <button
                     onClick={() => toggleMutation.mutate(item.id)}
-                    className={`text-xs ${item.equipped ? 'text-arcane-500' : 'text-parchment-200/30 hover:text-arcane-500'}`}
+                    className={`text-xs ${item.equipped ? 'text-arcane-500' : 'text-parchment-400 hover:text-arcane-500'}`}
                   >
                     équipé
                   </button>
@@ -304,7 +298,7 @@ function InventorySection({
                   item.equipped && <span className="text-xs text-arcane-500">équipé</span>
                 )}
                 {canEdit && (
-                  <button onClick={() => removeMutation.mutate(item.id)} className="text-xs text-parchment-200/30 hover:text-red-400">
+                  <button onClick={() => removeMutation.mutate(item.id)} className="text-xs text-parchment-400 hover:text-red-400">
                     ✕
                   </button>
                 )}
@@ -337,13 +331,9 @@ function InventorySection({
             onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
             className="w-14 rounded-md border border-ink-700 bg-ink-800 px-2 py-1 text-center text-sm outline-none focus:border-ember-500"
           />
-          <button
-            type="submit"
-            disabled={addMutation.isPending || !itemName.trim()}
-            className="rounded-md bg-ember-500 px-2 py-1 text-xs font-medium text-ink-950 disabled:opacity-50"
-          >
+          <Button type="submit" size="xs" disabled={addMutation.isPending || !itemName.trim()}>
             Ajouter
-          </button>
+          </Button>
         </form>
       )}
     </div>
@@ -387,9 +377,9 @@ function SkillsSection({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <h4 className="text-xs uppercase tracking-wide text-parchment-200/50">Compétences</h4>
+        <h4 className="text-xs uppercase tracking-wide text-parchment-300">Compétences</h4>
         {canEdit && (
-          <button onClick={() => setShowForm((s) => !s)} className="text-xs text-parchment-200/50 hover:text-ember-400">
+          <button onClick={() => setShowForm((s) => !s)} className="text-xs text-parchment-300 hover:text-ember-400">
             {showForm ? 'Annuler' : '+ Ajouter'}
           </button>
         )}
@@ -408,16 +398,16 @@ function SkillsSection({
       )}
 
       {skills.length === 0 && !showForm ? (
-        <p className="text-sm text-parchment-200/40">Aucune compétence renseignée.</p>
+        <p className="text-sm text-parchment-400">Aucune compétence renseignée.</p>
       ) : (
         <ul className="flex flex-col gap-1 text-sm">
           {skills.map((skill) => (
-            <li key={skill.id} className="flex items-center justify-between gap-2 text-parchment-200/80">
+            <li key={skill.id} className="flex items-center justify-between gap-2 text-parchment-200">
               <span className="truncate">{skill.name}</span>
               <span className="flex shrink-0 items-center gap-2">
                 <strong className="text-parchment-100">{skill.modifier >= 0 ? `+${skill.modifier}` : skill.modifier}</strong>
                 {canEdit && (
-                  <button onClick={() => removeMutation.mutate(skill.id)} className="text-xs text-parchment-200/30 hover:text-red-400">
+                  <button onClick={() => removeMutation.mutate(skill.id)} className="text-xs text-parchment-400 hover:text-red-400">
                     ✕
                   </button>
                 )}
@@ -449,13 +439,9 @@ function SkillsSection({
             onChange={(e) => setModifier(Number(e.target.value) || 0)}
             className="w-14 rounded-md border border-ink-700 bg-ink-800 px-2 py-1 text-center text-sm outline-none focus:border-ember-500"
           />
-          <button
-            type="submit"
-            disabled={addMutation.isPending || !skillName.trim()}
-            className="rounded-md bg-ember-500 px-2 py-1 text-xs font-medium text-ink-950 disabled:opacity-50"
-          >
+          <Button type="submit" size="xs" disabled={addMutation.isPending || !skillName.trim()}>
             Ajouter
-          </button>
+          </Button>
         </form>
       )}
     </div>

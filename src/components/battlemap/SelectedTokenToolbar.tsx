@@ -28,7 +28,7 @@ export function SelectedTokenToolbar({
         <div className="mb-1 text-parchment-100">
           {token.icon} {token.label}
         </div>
-        <p className="text-parchment-200/80">{token.content}</p>
+        <p className="text-parchment-200">{token.content}</p>
       </div>
     )
   }
@@ -41,7 +41,7 @@ export function SelectedTokenToolbar({
         </span>
         <button
           onClick={onToggleVisibility}
-          className="rounded-md border border-ink-700 px-2 py-1 text-xs text-parchment-200/70 hover:bg-ink-800"
+          className="rounded-md border border-ink-700 px-2 py-1 text-xs text-parchment-300 hover:bg-ink-800"
         >
           {token.visibleToPlayers ? '👁 Visible des joueurs' : '🙈 Caché des joueurs'}
         </button>
@@ -52,7 +52,7 @@ export function SelectedTokenToolbar({
           Supprimer
         </button>
       </div>
-      <label className="mt-2 block text-[10px] font-medium uppercase tracking-wider text-parchment-200/40">
+      <label className="mt-2 block text-[10px] font-medium uppercase tracking-wider text-parchment-400">
         Contenu / secret {!token.visibleToPlayers && '— caché tant que le pion l\'est'}
       </label>
       <input

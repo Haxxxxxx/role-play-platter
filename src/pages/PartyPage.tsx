@@ -8,6 +8,7 @@ import { useSystemReference, generateSystemReference, type SystemReferenceState 
 import { InvitePicker } from '@/components/InvitePicker'
 import type { Profile } from '@/hooks/useProfiles'
 import { useUiStore } from '@/store/useUiStore'
+import { Badge, Button, Card, EmptyState, Input } from '@/components/ui'
 import type { AbilityScores, Campaign, Character } from '@/types/database'
 
 const ABILITY_LABELS: Record<keyof AbilityScores, string> = {
@@ -30,12 +31,9 @@ export function PartyPage() {
 
       <div className="mb-6 flex items-center justify-between">
         <h2 className="font-display text-xl text-parchment-100">Groupe</h2>
-        <button
-          onClick={() => setShowForm((s) => !s)}
-          className="rounded-md border border-ink-700 px-3 py-1.5 text-sm text-parchment-200/70 hover:bg-ink-800"
-        >
+        <Button variant="secondary" size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Annuler' : '+ Ajouter un personnage'}
-        </button>
+        </Button>
       </div>
 
       {showForm && campaignId && (
@@ -47,9 +45,9 @@ export function PartyPage() {
         />
       )}
 
-      {loading && <p className="text-parchment-200/60">Chargement…</p>}
+      {loading && <p className="text-parchment-300">Chargement…</p>}
       {!loading && party.length === 0 && !showForm && (
-        <p className="text-sm text-parchment-200/60">Aucun personnage pour l'instant — ajoutez-en un ci-dessus.</p>
+        <EmptyState title="Aucun personnage pour l'instant" description="Ajoutez-en un ci-dessus." />
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -97,10 +95,10 @@ function RosterSection({ campaignId, gmId }: { campaignId: string; gmId: string 
   const alreadyInvited = members.map((m) => m.userId)
 
   return (
-    <section className="mb-8 rounded-xl border border-ink-700 bg-ink-900 p-4">
+    <Card className="mb-8">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-display text-lg text-parchment-100">Participants</h3>
-        <button onClick={copyInviteLink} className="text-xs text-parchment-200/50 hover:text-ember-400">
+        <button onClick={copyInviteLink} className="text-xs text-parchment-300 hover:text-ember-400">
           🔗 Copier le lien d'invitation
         </button>
       </div>
@@ -128,7 +126,7 @@ function RosterSection({ campaignId, gmId }: { campaignId: string; gmId: string 
         }}
         onRemove={() => {}}
       />
-    </section>
+    </Card>
   )
 }
 
@@ -156,29 +154,25 @@ function SystemReferenceSection({
   })
 
   return (
-    <section className="mb-8 rounded-xl border border-ink-700 bg-ink-900 p-4">
+    <Card className="mb-8">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="font-display text-lg text-parchment-100">Référence du système</h3>
-          <p className="text-xs text-parchment-200/50">
+          <p className="text-xs text-parchment-300">
             {reference
               ? `${reference.classes.length} classes, ${reference.skills.length} compétences — proposées par Gemini, pas une copie du livre.`
               : "Aucune référence encore — génère des classes et compétences adaptées à ton système pour accélérer la création de personnage."}
           </p>
         </div>
-        <button
-          onClick={() => mutation.mutate()}
-          disabled={mutation.isPending}
-          className="shrink-0 whitespace-nowrap rounded-md border border-arcane-500/50 px-3 py-1.5 text-sm text-arcane-500 hover:bg-arcane-500/10 disabled:opacity-50"
-        >
+        <Button variant="ai" size="sm" onClick={() => mutation.mutate()} disabled={mutation.isPending} className="shrink-0 whitespace-nowrap">
           {mutation.isPending ? 'Génération…' : reference ? '🔄 Régénérer' : '🧠 Générer'}
-        </button>
+        </Button>
       </div>
 
       {reference && (
         <button
           onClick={() => setExpanded((s) => !s)}
-          className="mt-2 text-xs text-parchment-200/50 hover:text-ember-400"
+          className="mt-2 text-xs text-parchment-300 hover:text-ember-400"
         >
           {expanded ? 'Masquer le détail' : 'Voir le détail'}
         </button>
@@ -187,8 +181,8 @@ function SystemReferenceSection({
       {reference && expanded && (
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <div>
-            <h4 className="mb-1.5 text-xs uppercase tracking-wide text-parchment-200/50">Classes</h4>
-            <ul className="flex flex-col gap-1 text-sm text-parchment-200/70">
+            <h4 className="mb-1.5 text-xs uppercase tracking-wide text-parchment-300">Classes</h4>
+            <ul className="flex flex-col gap-1 text-sm text-parchment-300">
               {reference.classes.map((c) => (
                 <li key={c.name}>
                   <strong className="text-parchment-100">{c.name}</strong> — {c.description}
@@ -197,8 +191,8 @@ function SystemReferenceSection({
             </ul>
           </div>
           <div>
-            <h4 className="mb-1.5 text-xs uppercase tracking-wide text-parchment-200/50">Compétences</h4>
-            <ul className="flex flex-col gap-1 text-sm text-parchment-200/70">
+            <h4 className="mb-1.5 text-xs uppercase tracking-wide text-parchment-300">Compétences</h4>
+            <ul className="flex flex-col gap-1 text-sm text-parchment-300">
               {reference.skills.map((s) => (
                 <li key={s.name}>
                   <strong className="text-parchment-100">{s.name}</strong> — {s.description}
@@ -208,7 +202,7 @@ function SystemReferenceSection({
           </div>
         </div>
       )}
-    </section>
+    </Card>
   )
 }
 
@@ -221,14 +215,10 @@ function RosterRow({ member, canRemove, onRemove }: { member: CampaignMember; ca
           <img src={member.profile.avatarUrl} alt="" className="h-5 w-5 shrink-0 rounded-full" />
         )}
         <span className="truncate text-parchment-100">{label}</span>
-        {member.role === 'gm' && (
-          <span className="shrink-0 whitespace-nowrap rounded-full border border-ember-500/40 px-1.5 py-0.5 text-[10px] uppercase text-ember-400">
-            MJ
-          </span>
-        )}
+        {member.role === 'gm' && <Badge variant="ember">MJ</Badge>}
       </span>
       {canRemove && (
-        <button onClick={onRemove} className="shrink-0 whitespace-nowrap text-xs text-parchment-200/40 hover:text-red-400">
+        <button onClick={onRemove} className="shrink-0 whitespace-nowrap text-xs text-parchment-400 hover:text-red-400">
           Retirer
         </button>
       )}
@@ -277,24 +267,13 @@ function NewCharacterForm({
         mutation.mutate()
       }}
     >
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Nom du personnage (ex. Elyne)"
-        className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
-      />
-      <input
-        value={playerName}
-        onChange={(e) => setPlayerName(e.target.value)}
-        placeholder="Nom du joueur"
-        className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
-      />
+      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom du personnage (ex. Elyne)" />
+      <Input value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Nom du joueur" />
       <div>
-        <input
+        <Input
           value={classAndLevel}
           onChange={(e) => setClassAndLevel(e.target.value)}
           placeholder="Classe et niveau (ex. Roublard 3)"
-          className="w-full rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
         />
         {reference && reference.classes.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
@@ -304,7 +283,7 @@ function NewCharacterForm({
                 type="button"
                 title={c.description}
                 onClick={() => setClassAndLevel(`${c.name} `)}
-                className="rounded-full border border-ink-700 px-2 py-0.5 text-xs text-parchment-200/60 hover:border-arcane-500/50 hover:text-arcane-500"
+                className="rounded-full border border-ink-700 px-2 py-0.5 text-xs text-parchment-300 hover:border-arcane-500/50 hover:text-arcane-500"
               >
                 {c.name}
               </button>
@@ -312,21 +291,16 @@ function NewCharacterForm({
           </div>
         )}
       </div>
-      <input
-        value={race}
-        onChange={(e) => setRace(e.target.value)}
-        placeholder="Peuple (ex. Halfelin, Nain, Elfe)"
-        className="rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
-      />
+      <Input value={race} onChange={(e) => setRace(e.target.value)} placeholder="Peuple (ex. Halfelin, Nain, Elfe)" />
 
       <div className="sm:col-span-2">
-        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-parchment-200/40">
+        <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-parchment-400">
           Caractéristiques
         </label>
         <div className="grid grid-cols-6 gap-1.5">
           {(Object.keys(abilityScores) as (keyof AbilityScores)[]).map((key) => (
             <div key={key} className="flex flex-col items-center gap-1">
-              <span className="text-[10px] uppercase text-parchment-200/50">{ABILITY_LABELS[key]}</span>
+              <span className="text-[10px] uppercase text-parchment-300">{ABILITY_LABELS[key]}</span>
               <input
                 type="number"
                 value={abilityScores[key]}
@@ -341,35 +315,31 @@ function NewCharacterForm({
       </div>
 
       <div className="flex gap-3">
-        <label className="flex-1 text-xs text-parchment-200/50">
+        <label className="flex-1 text-xs text-parchment-300">
           PV max
-          <input
+          <Input
             type="number"
             min={1}
             value={hpMax}
             onChange={(e) => setHpMax(Math.max(1, Number(e.target.value) || 1))}
-            className="mt-1 w-full rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm text-parchment-100 outline-none focus:border-ember-500"
+            className="mt-1"
           />
         </label>
-        <label className="flex-1 text-xs text-parchment-200/50">
+        <label className="flex-1 text-xs text-parchment-300">
           CA
-          <input
+          <Input
             type="number"
             min={0}
             value={armorClass}
             onChange={(e) => setArmorClass(Math.max(0, Number(e.target.value) || 0))}
-            className="mt-1 w-full rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm text-parchment-100 outline-none focus:border-ember-500"
+            className="mt-1"
           />
         </label>
       </div>
 
-      <button
-        type="submit"
-        disabled={mutation.isPending || !name.trim()}
-        className="self-start rounded-md bg-ember-500 px-4 py-2 text-sm font-medium text-ink-950 disabled:opacity-50 sm:col-span-2"
-      >
+      <Button type="submit" disabled={mutation.isPending || !name.trim()} className="self-start sm:col-span-2">
         {mutation.isPending ? 'Ajout…' : 'Ajouter au groupe'}
-      </button>
+      </Button>
     </form>
   )
 }
@@ -383,17 +353,17 @@ function CharacterSummaryCard({ campaignId, character }: { campaignId: string; c
       to={`/campaign/${campaignId}/character/${character.id}`}
       className="flex items-center gap-3 rounded-xl border border-ink-700 bg-ink-900 p-4 transition hover:border-ember-500/50"
     >
-      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-ink-700 bg-ink-800">
+      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-ink-700 bg-ink-800">
         {character.portraitUrl ? (
           <img src={character.portraitUrl} alt={character.name} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-2xl text-parchment-200/20">🧑</div>
+          <div className="flex h-full w-full items-center justify-center text-2xl text-parchment-400">🧑</div>
         )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <h3 className="truncate font-display text-lg text-parchment-100">{character.name}</h3>
-          <span className="shrink-0 text-xs text-parchment-200/50">{character.playerName}</span>
+          <span className="shrink-0 text-xs text-parchment-300">{character.playerName}</span>
         </div>
         <p className="truncate text-sm text-ember-400">
           {character.classAndLevel} · {character.race}
@@ -405,7 +375,7 @@ function CharacterSummaryCard({ campaignId, character }: { campaignId: string; c
               style={{ width: `${Math.max(0, Math.min(100, hpRatio * 100))}%` }}
             />
           </div>
-          <span className="shrink-0 text-xs text-parchment-200/50">
+          <span className="shrink-0 text-xs text-parchment-300">
             {character.hp.current}/{character.hp.max} PV
           </span>
         </div>

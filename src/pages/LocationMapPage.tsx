@@ -22,6 +22,7 @@ import { MapGrid } from '@/components/battlemap/MapGrid'
 import { GmToolbar } from '@/components/battlemap/GmToolbar'
 import { SelectedTokenToolbar } from '@/components/battlemap/SelectedTokenToolbar'
 import { useUiStore } from '@/store/useUiStore'
+import { Badge, Button, EmptyState } from '@/components/ui'
 import type { Campaign, MapToken } from '@/types/database'
 
 interface MapNavState {
@@ -116,42 +117,31 @@ export function LocationMapPage() {
     <div ref={fullscreenRef} className={isFullscreen ? 'overflow-auto bg-ink-950 p-4' : ''}>
       <button
         onClick={handleReturnToWorldMap}
-        className="mb-4 inline-block text-sm text-parchment-200/60 hover:text-parchment-100"
+        className="mb-4 inline-block text-sm text-parchment-300 hover:text-parchment-100"
       >
         ← Retour à la carte du monde
       </button>
 
       {!location ? (
-        <p className="text-parchment-200/60">Lieu introuvable.</p>
+        <p className="text-parchment-300">Lieu introuvable.</p>
       ) : (
         <>
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-display text-xl text-parchment-100">📍 {location.name}</h2>
             <div className="flex shrink-0 items-center gap-2">
-              <span
-                className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${
-                  isGm ? 'border-ember-500/50 text-ember-400' : 'border-ink-700 text-parchment-200/50'
-                }`}
-              >
-                {isGm ? 'Vue MJ — éditable' : 'Vue joueur'}
-              </span>
-              <button
-                onClick={toggleFullscreen}
-                title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
-                className="rounded-md border border-ink-700 px-2 py-1 text-xs text-parchment-200/60 hover:border-ember-500/50 hover:text-ember-400"
-              >
+              <Badge variant={isGm ? 'ember' : 'neutral'}>{isGm ? 'Vue MJ — éditable' : 'Vue joueur'}</Badge>
+              <Button variant="secondary" size="xs" onClick={toggleFullscreen} title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
                 {isFullscreen ? '⤢ Quitter' : '⛶ Plein écran'}
-              </button>
+              </Button>
             </div>
           </div>
-          {location.description && <p className="mb-4 text-sm text-parchment-200/60">{location.description}</p>}
+          {location.description && <p className="mb-4 text-sm text-parchment-300">{location.description}</p>}
 
-          {mapLoading && <div className="p-10 text-parchment-200/60">Chargement de la carte…</div>}
+          {mapLoading && <div className="p-10 text-parchment-300">Chargement de la carte…</div>}
 
           {!mapLoading && !map && (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-ink-700 py-24 text-center">
-              <h3 className="font-display text-lg text-parchment-100">Pas encore de carte détaillée</h3>
-              <p className="mt-2 max-w-md text-sm text-parchment-200/60">Le MJ n'a pas encore ouvert ce lieu.</p>
+            <div className="py-16">
+              <EmptyState title="Pas encore de carte détaillée" description="Le MJ n'a pas encore ouvert ce lieu." />
             </div>
           )}
 

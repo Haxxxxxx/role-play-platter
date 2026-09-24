@@ -40,7 +40,7 @@ export function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4 text-center">
       <div>
         <h1 className="font-display text-4xl text-parchment-100">Role Play Platter</h1>
-        <p className="mt-2 max-w-md text-parchment-200/70">
+        <p className="mt-2 max-w-md text-parchment-300">
           La chronique vivante de votre table — déposez vos notes de session, et regardez la timeline, le
           codex des PNJ, le journal des quêtes et l'historique du groupe s'écrire tout seuls.
         </p>
@@ -62,7 +62,7 @@ export function LoginPage() {
         >
           {pending === 'guest' ? 'Démarrage…' : 'Commencer à jouer'}
         </button>
-        <p className="text-xs text-parchment-200/40">
+        <p className="text-xs text-parchment-400">
           Aucun compte requis — créez et jouez une campagne tout de suite. Vous pourrez la sauvegarder sur
           un vrai compte plus tard, depuis votre profil, quand vous voudrez.
         </p>
@@ -71,7 +71,7 @@ export function LoginPage() {
       <button
         onClick={handleGoogle}
         disabled={pending !== null}
-        className="text-sm text-parchment-200/60 underline decoration-dotted hover:text-parchment-100 disabled:opacity-50"
+        className="text-sm text-parchment-300 underline decoration-dotted hover:text-parchment-100 disabled:opacity-50"
       >
         {pending === 'google' ? 'Redirection…' : 'Déjà un compte ? Se connecter avec Google'}
       </button>

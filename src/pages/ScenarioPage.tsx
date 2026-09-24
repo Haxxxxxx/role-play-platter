@@ -13,6 +13,7 @@ import {
   useScenes,
 } from '@/hooks/useScenes'
 import { useUiStore } from '@/store/useUiStore'
+import { Button, EmptyState, Input, Label } from '@/components/ui'
 import type { Campaign, Scene } from '@/types/database'
 
 /**
@@ -70,14 +71,14 @@ export function ScenarioPage() {
   }
   const allOpen = scenes.length > 0 && scenes.every((s) => expanded.has(s.id))
 
-  if (!isGm) return <p className="text-sm text-parchment-200/60">Réservé au MJ.</p>
+  if (!isGm) return <p className="text-sm text-parchment-300">Réservé au MJ.</p>
 
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-end justify-between gap-3">
         <div>
           <h2 className="mb-1 font-display text-xl text-parchment-100">Scénario</h2>
-          <p className="text-sm text-parchment-200/60">
+          <p className="text-sm text-parchment-300">
             Préparez vos scènes avant la partie — texte à lire, notes secrètes, rencontres — puis jouez à partir
             d'ici.
           </p>
@@ -85,7 +86,7 @@ export function ScenarioPage() {
         {scenes.length > 1 && (
           <button
             onClick={() => setExpanded(allOpen ? new Set() : new Set(scenes.map((s) => s.id)))}
-            className="shrink-0 whitespace-nowrap text-xs text-parchment-200/50 hover:text-ember-400"
+            className="shrink-0 whitespace-nowrap text-xs text-parchment-300 hover:text-ember-400"
           >
             {allOpen ? 'Tout replier' : 'Tout déplier'}
           </button>
@@ -99,38 +100,30 @@ export function ScenarioPage() {
           if (premise.trim()) generate.mutate()
         }}
       >
-        <label className="text-[10px] font-medium uppercase tracking-wider text-parchment-200/40">
-          Générer une scène (IA)
-        </label>
+        <Label>Générer une scène (IA)</Label>
         <div className="flex gap-2">
-          <input
+          <Input
             value={premise}
             onChange={(e) => setPremise(e.target.value)}
             placeholder="ex. La compagnie arrive à une tour de guet en ruine à la nuit tombée"
-            className="flex-1 rounded-md border border-ink-700 bg-ink-800 px-3 py-2 text-sm outline-none focus:border-ember-500"
+            className="flex-1"
           />
-          <button
-            type="submit"
-            disabled={generate.isPending || !premise.trim()}
-            className="shrink-0 whitespace-nowrap rounded-md border border-arcane-500/50 px-3 py-2 text-sm text-arcane-500 hover:bg-arcane-500/10 disabled:opacity-50"
-          >
+          <Button type="submit" variant="ai" disabled={generate.isPending || !premise.trim()} className="shrink-0">
             {generate.isPending ? 'Génération…' : '✨ Générer'}
-          </button>
+          </Button>
         </div>
         <button
           type="button"
           onClick={() => addBlank.mutate()}
-          className="self-start text-xs text-parchment-200/50 hover:text-ember-400"
+          className="self-start text-xs text-parchment-300 hover:text-ember-400"
         >
           + Scène vide
         </button>
       </form>
 
-      {loading && <p className="text-sm text-parchment-200/60">Chargement…</p>}
+      {loading && <p className="text-sm text-parchment-300">Chargement…</p>}
       {!loading && scenes.length === 0 && (
-        <p className="text-sm text-parchment-200/60">
-          Aucune scène — générez-en une ci-dessus ou partez d'une scène vide.
-        </p>
+        <EmptyState title="Aucune scène" description="Générez-en une ci-dessus ou partez d'une scène vide." />
       )}
 
       <div className="flex flex-col gap-3">
@@ -201,7 +194,7 @@ function SceneCard({
       <div className="flex items-start gap-2 p-3">
         <button
           onClick={onToggle}
-          className="mt-0.5 shrink-0 text-parchment-200/40 transition-transform hover:text-ember-400"
+          className="mt-0.5 shrink-0 text-parchment-400 transition-transform hover:text-ember-400"
           style={{ transform: open ? 'rotate(90deg)' : 'none' }}
           aria-label={open ? 'Replier' : 'Déplier'}
         >
@@ -209,22 +202,22 @@ function SceneCard({
         </button>
         <div className="min-w-0 flex-1">
           <button onClick={onToggle} className="flex w-full items-baseline gap-2 text-left">
-            <span className="shrink-0 text-xs text-parchment-200/40">{index + 1}</span>
+            <span className="shrink-0 text-xs text-parchment-400">{index + 1}</span>
             <span
-              className={`truncate font-display text-lg ${scene.done ? 'text-parchment-200/50 line-through' : 'text-parchment-100'}`}
+              className={`truncate font-display text-lg ${scene.done ? 'text-parchment-300 line-through' : 'text-parchment-100'}`}
             >
               {scene.title || 'Sans titre'}
             </span>
           </button>
           {!open && (
-            <p className="mt-0.5 truncate text-xs text-parchment-200/45">
+            <p className="mt-0.5 truncate text-xs text-parchment-300">
               {scene.readAloud || scene.gmNotes || 'Vide'}
             </p>
           )}
           {!open && (scene.encounter || scene.npcIds.length > 0 || scene.done) && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {scene.done && (
-                <span className="rounded-full border border-ink-700 px-1.5 py-0.5 text-[10px] uppercase text-parchment-200/40">
+                <span className="rounded-full border border-ink-700 px-1.5 py-0.5 text-[10px] uppercase text-parchment-400">
                   jouée
                 </span>
               )}
@@ -234,7 +227,7 @@ function SceneCard({
                 </span>
               )}
               {scene.npcIds.length > 0 && (
-                <span className="rounded-full border border-ink-700 px-1.5 py-0.5 text-[10px] text-parchment-200/50">
+                <span className="rounded-full border border-ink-700 px-1.5 py-0.5 text-[10px] text-parchment-300">
                   {scene.npcIds.length} PNJ
                 </span>
               )}
@@ -246,14 +239,14 @@ function SceneCard({
           <button
             onClick={() => onMove('up')}
             disabled={index === 0}
-            className="rounded border border-ink-700 px-1.5 text-xs text-parchment-200/50 hover:text-ember-400 disabled:opacity-30"
+            className="rounded border border-ink-700 px-1.5 text-xs text-parchment-300 hover:text-ember-400 disabled:opacity-30"
           >
             ▲
           </button>
           <button
             onClick={() => onMove('down')}
             disabled={index === total - 1}
-            className="rounded border border-ink-700 px-1.5 text-xs text-parchment-200/50 hover:text-ember-400 disabled:opacity-30"
+            className="rounded border border-ink-700 px-1.5 text-xs text-parchment-300 hover:text-ember-400 disabled:opacity-30"
           >
             ▼
           </button>
@@ -262,7 +255,7 @@ function SceneCard({
 
       {open && (
         <div className="border-t border-ink-700/70 p-4">
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-parchment-200/40">
+          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-parchment-400">
             Titre
           </label>
           <input
@@ -279,7 +272,7 @@ function SceneCard({
             value={scene.readAloud}
             onCommit={(v) => save({ read_aloud: v })}
             placeholder="Texte d'ambiance à lire aux joueurs quand la scène commence…"
-            className="mb-4 border-l-2 border-l-ember-500/50 bg-ember-500/[0.04] italic text-parchment-100/90"
+            className="mb-4 border-l-2 border-l-ember-500/50 bg-ember-500/[0.04] italic text-parchment-100"
           />
 
           {/* GM notes: styled as secret prep */}
@@ -293,7 +286,7 @@ function SceneCard({
             className="mb-4 border-l-2 border-l-arcane-500/40 bg-arcane-500/[0.04]"
           />
 
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-parchment-200/40">
+          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-parchment-400">
             ⚔ Rencontre
           </label>
           <input
@@ -325,7 +318,7 @@ function SceneCard({
           )}
 
           <div className="mt-4 flex items-center gap-4 border-t border-ink-700/70 pt-3">
-            <label className="flex items-center gap-1.5 text-xs text-parchment-200/50">
+            <label className="flex items-center gap-1.5 text-xs text-parchment-300">
               <input
                 type="checkbox"
                 checked={scene.done}
@@ -337,13 +330,13 @@ function SceneCard({
             <button
               onClick={() => pushMutation.mutate()}
               disabled={pushMutation.isPending}
-              className="text-xs text-parchment-200/50 hover:text-ember-400 disabled:opacity-50"
+              className="text-xs text-parchment-300 hover:text-ember-400 disabled:opacity-50"
             >
               → Envoyer dans la chronique
             </button>
             <button
               onClick={() => deleteScene(scene.id).catch(() => pushToast('Suppression impossible.', 'error'))}
-              className="ml-auto text-xs text-parchment-200/30 hover:text-red-400"
+              className="ml-auto text-xs text-parchment-400 hover:text-red-400"
             >
               Supprimer
             </button>
@@ -413,7 +406,7 @@ function RefChips({
 }) {
   return (
     <div>
-      <span className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-parchment-200/40">{label}</span>
+      <span className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-parchment-400">{label}</span>
       <div className="flex flex-wrap gap-1">
         {options.map((o) => {
           const on = selected.includes(o.id)
@@ -424,7 +417,7 @@ function RefChips({
               className={`rounded-full border px-2 py-0.5 text-xs ${
                 on
                   ? 'border-ember-500/50 bg-ember-500/10 text-ember-400'
-                  : 'border-ink-700 text-parchment-200/50 hover:text-parchment-200/80'
+                  : 'border-ink-700 text-parchment-300 hover:text-parchment-200'
               }`}
             >
               {o.name}

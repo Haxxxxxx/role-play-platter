@@ -45,7 +45,7 @@ export function JoinCampaignPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
         <h1 className="font-display text-2xl text-parchment-100">Impossible de rejoindre cette campagne</h1>
-        <p className="max-w-md text-parchment-200/70">Ce lien d'invitation n'est pas valide.</p>
+        <p className="max-w-md text-parchment-300">Ce lien d'invitation n'est pas valide.</p>
         <Link to="/" className="text-sm text-ember-400 hover:underline">
           ← Retour à l'accueil
         </Link>
@@ -54,7 +54,7 @@ export function JoinCampaignPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center text-parchment-200/60">
+    <div className="flex min-h-screen items-center justify-center text-parchment-300">
       {authLoading ? 'Connexion…' : 'Rejoindre la campagne…'}
     </div>
   )
